@@ -51,9 +51,9 @@ MCP supports stdio and HTTP.
 4. Choose a name and select a supported account type.
 5. Copy the Application (client) ID and Directory (tenant) ID.
 
-## OAuth configuration
+## OAuth modes
 
-Configure via environment variables or the `env` block in `.mcp.json`. Use `server.json` for the full list of options.
+Configure via environment variables or the `env` block in `.mcp.json`. See `server.json` for the full list of options.
 
 ### Loopback OAuth (default)
 
@@ -101,7 +101,7 @@ Useful for headless or remote environments.
 }
 ```
 
-### DCR (Dynamic Client Registration)
+### DCR (self-hosted)
 
 HTTP only. Requires a public base URL.
 
