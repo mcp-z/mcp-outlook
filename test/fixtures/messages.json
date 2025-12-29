@@ -1,0 +1,58 @@
+{
+  "messages": [
+    {
+      "id": "o1",
+      "conversationId": "conv1",
+      "subject": "Q3 Quarterly Report Review",
+      "toRecipients": [
+        {
+          "emailAddress": {
+            "name": "John Doe",
+            "address": "john@example.com"
+          }
+        }
+      ],
+      "from": {
+        "emailAddress": {
+          "name": "Finance Team",
+          "address": "finance@example.com"
+        }
+      },
+      "ccRecipients": [],
+      "bccRecipients": [],
+      "receivedDateTime": "2025-01-15T10:30:00Z",
+      "bodyPreview": "Please review the quarterly report attached to this email...",
+      "body": {
+        "contentType": "text",
+        "content": "Hi team,\n\nPlease review the quarterly report attached to this email. The numbers show strong performance this quarter.\n\nBest regards,\nFinance Team"
+      }
+    },
+    {
+      "id": "o2",
+      "conversationId": "conv2",
+      "subject": "Meeting Notes - Project Update",
+      "toRecipients": [
+        {
+          "emailAddress": {
+            "name": "Jane Smith",
+            "address": "jane@example.com"
+          }
+        }
+      ],
+      "from": {
+        "emailAddress": {
+          "name": "Project Manager",
+          "address": "pm@example.com"
+        }
+      },
+      "ccRecipients": [],
+      "bccRecipients": [],
+      "receivedDateTime": "2025-01-15T11:00:00Z",
+      "bodyPreview": "Here are the notes from today's project meeting...",
+      "body": {
+        "contentType": "text",
+        "content": "Hi team,\n\nHere are the notes from today's project meeting. We discussed the timeline and deliverables for the next milestone.\n\nThanks,\nProject Manager"
+      }
+    }
+  ]
+}

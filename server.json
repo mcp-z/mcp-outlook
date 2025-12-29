@@ -1,0 +1,330 @@
+{
+  "$schema": "https://static.modelcontextprotocol.io/schemas/2025-12-11/server.schema.json",
+  "name": "io.github.mcp-z/mcp-outlook",
+  "description": "Outlook integration with OAuth, message search, batch operations, and calendar management",
+  "version": "1.0.0",
+  "title": "Outlook",
+  "websiteUrl": "https://github.com/mcp-z/mcp-outlook#readme",
+  "packages": [
+    {
+      "registryType": "npm",
+      "identifier": "@mcp-z/mcp-outlook",
+      "version": "1.0.0",
+      "transport": {
+        "type": "stdio"
+      },
+      "runtimeHint": "npx",
+      "runtimeArguments": [
+        {
+          "type": "named",
+          "name": "-y"
+        }
+      ],
+      "environmentVariables": [
+        {
+          "name": "MS_CLIENT_ID",
+          "description": "Microsoft OAuth client ID (required for OAuth authentication modes)",
+          "placeholder": "12345678-abcd-1234-abcd-123456789abc",
+          "isRequired": true,
+          "isSecret": false
+        },
+        {
+          "name": "MS_TENANT_ID",
+          "description": "Microsoft tenant ID (required for OAuth authentication)",
+          "placeholder": "common",
+          "isRequired": true,
+          "isSecret": false
+        },
+        {
+          "name": "MS_CLIENT_SECRET",
+          "description": "Microsoft OAuth client secret (optional for public clients)",
+          "placeholder": "abc~123DEF.456ghi-789JKL_012mno",
+          "isRequired": false,
+          "isSecret": true
+        },
+        {
+          "name": "AUTH_MODE",
+          "value": "loopback-oauth",
+          "description": "Authentication mode",
+          "placeholder": "loopback-oauth",
+          "choices": ["loopback-oauth", "device-code"],
+          "isRequired": false,
+          "isSecret": false
+        },
+        {
+          "name": "HEADLESS",
+          "description": "Disable browser auto-open, return auth URL instead (true/false)",
+          "placeholder": "false",
+          "isRequired": false,
+          "isSecret": false,
+          "default": "false",
+          "dependsOn": { "AUTH_MODE": ["loopback-oauth"] }
+        },
+        {
+          "name": "REDIRECT_URI",
+          "description": "OAuth redirect URI (optional, default: ephemeral loopback)",
+          "placeholder": "http://localhost:{PORT}/oauth/callback",
+          "isRequired": false,
+          "isSecret": false,
+          "dependsOn": { "AUTH_MODE": ["loopback-oauth"] }
+        },
+        {
+          "name": "STORAGE_DIR",
+          "value": "~/.mcp-z/mcp-outlook/files",
+          "description": "Directory for storing CSV export files",
+          "placeholder": "~/.mcp-z/mcp-outlook/files",
+          "isRequired": false,
+          "isSecret": false
+        },
+        {
+          "name": "PORT",
+          "description": "HTTP server port (overrides --port)",
+          "placeholder": "3000",
+          "isRequired": false,
+          "isSecret": false
+        },
+        {
+          "name": "BASE_URL",
+          "description": "Base URL for HTTP file serving (optional, used for HTTP transport)",
+          "placeholder": "http://localhost:{PORT}",
+          "isRequired": false,
+          "isSecret": false
+        },
+        {
+          "name": "LOG_LEVEL",
+          "value": "info",
+          "description": "Logging level",
+          "placeholder": "info",
+          "choices": ["debug", "info", "warn", "error"],
+          "isRequired": false,
+          "isSecret": false,
+          "isMandatoryForMatrix": false
+        }
+      ],
+      "packageArguments": [
+        {
+          "type": "named",
+          "name": "--auth",
+          "description": "Authentication mode",
+          "choices": ["loopback-oauth", "device-code"]
+        },
+        {
+          "type": "named",
+          "name": "--tenant-id",
+          "description": "Microsoft tenant ID (overrides MS_TENANT_ID env var)"
+        },
+        {
+          "type": "named",
+          "name": "--headless",
+          "description": "Disable browser auto-open, return auth URL instead"
+        },
+        {
+          "type": "named",
+          "name": "--redirect-uri",
+          "description": "OAuth redirect URI (default: ephemeral loopback)"
+        },
+        {
+          "type": "named",
+          "name": "--storage-dir",
+          "description": "Override directory for storing CSV export files"
+        },
+        {
+          "type": "named",
+          "name": "--base-url",
+          "description": "Override base URL for HTTP file serving"
+        },
+        {
+          "type": "named",
+          "name": "--log-level",
+          "description": "Override logging level",
+          "choices": ["debug", "info", "warn", "error"]
+        }
+      ]
+    },
+    {
+      "registryType": "npm",
+      "identifier": "@mcp-z/mcp-outlook",
+      "version": "1.0.0",
+      "transport": {
+        "type": "streamable-http",
+        "url": "http://localhost:{PORT}/mcp"
+      },
+      "runtimeHint": "npx",
+      "runtimeArguments": [
+        {
+          "type": "named",
+          "name": "-y"
+        }
+      ],
+      "environmentVariables": [
+        {
+          "name": "MS_CLIENT_ID",
+          "description": "Microsoft OAuth client ID (required for OAuth authentication modes)",
+          "placeholder": "12345678-abcd-1234-abcd-123456789abc",
+          "isRequired": true,
+          "isSecret": false
+        },
+        {
+          "name": "MS_TENANT_ID",
+          "description": "Microsoft tenant ID (required for OAuth authentication)",
+          "placeholder": "common",
+          "isRequired": true,
+          "isSecret": false
+        },
+        {
+          "name": "MS_CLIENT_SECRET",
+          "description": "Microsoft OAuth client secret (optional for public clients)",
+          "placeholder": "abc~123DEF.456ghi-789JKL_012mno",
+          "isRequired": false,
+          "isSecret": true
+        },
+        {
+          "name": "AUTH_MODE",
+          "value": "loopback-oauth",
+          "description": "Authentication mode",
+          "placeholder": "loopback-oauth",
+          "choices": ["loopback-oauth", "device-code", "dcr"],
+          "isRequired": false,
+          "isSecret": false
+        },
+        {
+          "name": "HEADLESS",
+          "description": "Disable browser auto-open, return auth URL instead (true/false)",
+          "placeholder": "false",
+          "isRequired": false,
+          "isSecret": false,
+          "default": "false",
+          "dependsOn": { "AUTH_MODE": ["loopback-oauth", "dcr"] }
+        },
+        {
+          "name": "REDIRECT_URI",
+          "description": "OAuth redirect URI (optional, default: ephemeral loopback)",
+          "placeholder": "http://localhost:{PORT}/oauth/callback",
+          "isRequired": false,
+          "isSecret": false,
+          "dependsOn": { "AUTH_MODE": ["loopback-oauth"] }
+        },
+        {
+          "name": "DCR_MODE",
+          "description": "Dynamic Client Registration mode",
+          "placeholder": "self-hosted",
+          "choices": ["self-hosted", "external"],
+          "isRequired": false,
+          "isSecret": false,
+          "default": "self-hosted",
+          "dependsOn": { "AUTH_MODE": ["dcr"] }
+        },
+        {
+          "name": "DCR_VERIFY_URL",
+          "description": "External verification endpoint URL (required for external DCR mode)",
+          "placeholder": "https://example.com/verify",
+          "isRequired": false,
+          "isSecret": false,
+          "dependsOn": { "AUTH_MODE": ["dcr"], "DCR_MODE": ["external"] }
+        },
+        {
+          "name": "DCR_STORE_URI",
+          "description": "DCR client storage URI (for self-hosted DCR mode)",
+          "placeholder": "file://~/.mcp-z/mcp-outlook/dcr.json",
+          "isRequired": false,
+          "isSecret": false,
+          "default": "file://~/.mcp-z/mcp-outlook/dcr.json",
+          "dependsOn": { "AUTH_MODE": ["dcr"] }
+        },
+        {
+          "name": "STORAGE_DIR",
+          "value": "~/.mcp-z/mcp-outlook/files",
+          "description": "Directory for storing CSV export files",
+          "placeholder": "~/.mcp-z/mcp-outlook/files",
+          "isRequired": false,
+          "isSecret": false
+        },
+        {
+          "name": "PORT",
+          "description": "HTTP server port (overrides --port)",
+          "placeholder": "3000",
+          "isRequired": false,
+          "isSecret": false
+        },
+        {
+          "name": "BASE_URL",
+          "description": "Base URL for HTTP file serving (defaults to http://localhost:{PORT})",
+          "placeholder": "http://localhost:{PORT}",
+          "isRequired": false,
+          "isSecret": false
+        },
+        {
+          "name": "LOG_LEVEL",
+          "value": "info",
+          "description": "Logging level",
+          "placeholder": "info",
+          "choices": ["debug", "info", "warn", "error"],
+          "isRequired": false,
+          "isSecret": false,
+          "isMandatoryForMatrix": false
+        }
+      ],
+      "packageArguments": [
+        {
+          "type": "named",
+          "name": "--port",
+          "value": "9003",
+          "description": "HTTP server port"
+        },
+        {
+          "type": "named",
+          "name": "--auth",
+          "description": "Authentication mode",
+          "choices": ["loopback-oauth", "device-code", "dcr"]
+        },
+        {
+          "type": "named",
+          "name": "--tenant-id",
+          "description": "Microsoft tenant ID (overrides MS_TENANT_ID env var)"
+        },
+        {
+          "type": "named",
+          "name": "--headless",
+          "description": "Disable browser auto-open, return auth URL instead"
+        },
+        {
+          "type": "named",
+          "name": "--redirect-uri",
+          "description": "OAuth redirect URI (default: ephemeral loopback)"
+        },
+        {
+          "type": "named",
+          "name": "--dcr-mode",
+          "description": "DCR mode",
+          "choices": ["self-hosted", "external"]
+        },
+        {
+          "type": "named",
+          "name": "--dcr-verify-url",
+          "description": "External verification endpoint URL (required for external DCR mode)"
+        },
+        {
+          "type": "named",
+          "name": "--dcr-store-uri",
+          "description": "DCR client storage URI (for self-hosted DCR mode)"
+        },
+        {
+          "type": "named",
+          "name": "--storage-dir",
+          "description": "Override directory for storing CSV export files"
+        },
+        {
+          "type": "named",
+          "name": "--base-url",
+          "description": "Override base URL for HTTP file serving"
+        },
+        {
+          "type": "named",
+          "name": "--log-level",
+          "description": "Override logging level",
+          "choices": ["debug", "info", "warn", "error"]
+        }
+      ]
+    }
+  ]
+}
