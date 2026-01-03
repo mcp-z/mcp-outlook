@@ -1,10 +1,10 @@
-import { AccountServer, type AuthEmailProvider } from '@mcp-z/oauth';
-import { createDcrRouter, DcrOAuthProvider, DeviceCodeProvider, LoopbackOAuthProvider } from '@mcp-z/oauth-microsoft';
+import { type AccountAuthProvider, AccountServer } from '@mcp-z/oauth';
+import { createDcrRouter, createLoopbackCallbackRouter, DcrOAuthProvider, DeviceCodeProvider, LoopbackOAuthProvider } from '@mcp-z/oauth-microsoft';
 import type { Logger, PromptModule, ToolModule } from '@mcp-z/server';
 import type { Router } from 'express';
 import type { Keyv } from 'keyv';
 import { MS_SCOPE } from '../constants.ts';
-import type { ServerConfig } from '../types.js';
+import type { ServerConfig } from '../types.ts';
 
 /**
  * Outlook OAuth runtime dependencies
@@ -30,10 +30,11 @@ export interface AuthMiddleware {
 export interface OAuthAdapters {
   primary: LoopbackOAuthProvider | DeviceCodeProvider | DcrOAuthProvider;
   middleware: AuthMiddleware;
-  authAdapter: AuthEmailProvider;
+  authAdapter: AccountAuthProvider;
   accountTools: ToolModule[];
   accountPrompts: PromptModule[];
   dcrRouter?: Router; // DCR OAuth endpoints (only for dcr mode)
+  loopbackRouter?: Router;
 }
 
 /**
@@ -100,7 +101,10 @@ export async function createOAuthAdapters(config: ServerConfig, deps: OAuthRunti
     const middleware = primary.authMiddleware();
 
     // Create auth email provider (stateless, no token storage)
-    const authAdapter: AuthEmailProvider = {
+    const authAdapter: AccountAuthProvider = {
+      getAccessToken: () => {
+        throw new Error('DCR mode does not support getAccessToken - tokens are provided via bearer auth');
+      },
       getUserEmail: () => {
         throw new Error('DCR mode does not support getUserEmail - tokens are provided via bearer auth');
       },
@@ -136,9 +140,9 @@ export async function createOAuthAdapters(config: ServerConfig, deps: OAuthRunti
     const middleware = deviceCodeProvider.authMiddleware();
 
     // Create auth email provider
-    const authAdapter: AuthEmailProvider = {
+    const authAdapter: AccountAuthProvider = {
+      getAccessToken: (accountId) => deviceCodeProvider.getAccessToken(accountId),
       getUserEmail: (accountId) => deviceCodeProvider.getUserEmail(accountId),
-      // No authenticateNewAccount for device code (single account)
     };
 
     // No account management tools for device code (like service accounts)
@@ -166,12 +170,7 @@ export async function createOAuthAdapters(config: ServerConfig, deps: OAuthRunti
   });
 
   // Create auth email provider (used by account management tools)
-  const authAdapter: AuthEmailProvider = {
-    getUserEmail: (accountId) => primary.getUserEmail(accountId),
-    ...(primary.authenticateNewAccount && {
-      authenticateNewAccount: () => primary.authenticateNewAccount?.(),
-    }),
-  };
+  const authAdapter: AccountAuthProvider = primary;
 
   // Select middleware AND account tools based on auth mode
   const middleware: ReturnType<LoopbackOAuthProvider['authMiddleware']> = primary.authMiddleware();
@@ -187,5 +186,7 @@ export async function createOAuthAdapters(config: ServerConfig, deps: OAuthRunti
   const accountPrompts: PromptModule[] = result.prompts as PromptModule[];
   logger.debug('Loopback OAuth (multi-account mode)', { service: oauthStaticConfig.service });
 
-  return { primary, middleware: middleware as AuthMiddleware, authAdapter, accountTools, accountPrompts };
+  const loopbackRouter = oauthStaticConfig.redirectUri ? createLoopbackCallbackRouter(primary) : undefined;
+
+  return { primary, middleware: middleware as AuthMiddleware, authAdapter, accountTools, accountPrompts, loopbackRouter };
 }

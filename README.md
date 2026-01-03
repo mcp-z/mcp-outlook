@@ -50,6 +50,11 @@ MCP supports stdio and HTTP.
 3. Click New registration.
 4. Choose a name and select a supported account type.
 5. Copy the Application (client) ID and Directory (tenant) ID.
+6. Select your MCP transport (stdio for local and http for remote) and platform
+- For stdio, choose "Authentication", + Add Redirect URI, "Mobile and desktop applications" platform 
+- For http, choose "Authentication", + Add Redirect URI, "Web" platform, add your URL (default is http://localhost:3000/oauth/callback based on the --port or PORT)
+- For local hosting, add "http://localhost" for [Ephemeral redirect URL](https://en.wikipedia.org/wiki/Ephemeral_port)
+7. Enable OAuth2 scopes in API Permissions: openid profile offline_access https://graph.microsoft.com/User.Read https://graph.microsoft.com/Mail.ReadWrite https://graph.microsoft.com/Mail.Send https://graph.microsoft.com/MailboxSettings.ReadWrite
 
 ## OAuth modes
 
@@ -65,7 +70,7 @@ MS_TENANT_ID=common
 MS_CLIENT_SECRET=your-client-secret
 ```
 
-Example:
+Example (stdio) - Create .mcp.json:
 ```json
 {
   "mcpServers": {
@@ -74,13 +79,37 @@ Example:
       "args": ["-y", "@mcp-z/mcp-outlook"],
       "env": {
         "MS_CLIENT_ID": "your-client-id",
-        "MS_TENANT_ID": "common",
-        "MS_CLIENT_SECRET": "your-client-secret"
+        "MS_TENANT_ID": "common"
       }
     }
   }
 }
 ```
+
+Example (http) - Create .mcp.json:
+```json
+{
+  "mcpServers": {
+    "outlook": {
+      "type": "http",
+      "url": "http://localhost:3000",
+      "start": {
+        "command": "npx",
+        "args": ["-y", "@mcp-z/mcp-outlook", "--port=3000"],
+        "env": {
+          "MS_CLIENT_ID": "your-client-id",
+          "MS_TENANT_ID": "common"
+        }
+      }
+    }
+  }
+}
+```
+
+Local (default): omit REDIRECT_URI → ephemeral loopback.
+Cloud: set REDIRECT_URI to your public /oauth/callback and expose the service publicly.
+
+Note: start block is a helper in "npx @mcp-z/cli up" for starting an http server from your .mpc.json. See [@mcp-z/cli](https://github.com/mcp-z/cli) for details.
 
 ### Device code
 

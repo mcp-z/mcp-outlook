@@ -8,7 +8,7 @@ import type { ToolModule } from '@mcp-z/server';
 import { Client } from '@microsoft/microsoft-graph-client';
 import { type CallToolResult, ErrorCode, McpError } from '@modelcontextprotocol/sdk/types.js';
 import { z } from 'zod';
-import { buildOutlookMessage } from '../../email/composition/outlook-message-builder.js';
+import { buildOutlookMessage } from '../../email/composition/outlook-message-builder.ts';
 
 const MessageResultSchema = createMessageResultSchema('outlook');
 

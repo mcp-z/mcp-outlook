@@ -2,12 +2,12 @@ import type { Logger, MicrosoftAuthProvider } from '@mcp-z/oauth-microsoft';
 import { Client } from '@microsoft/microsoft-graph-client';
 import assert from 'assert';
 import type { ZodTypeAny } from 'zod';
-import categoriesFactory, { type Output as CategoriesOutput } from '../../../../src/mcp/tools/categories-list.js';
-import createTool, { type Input, type Output } from '../../../../src/mcp/tools/labels-list.js';
-import { createTestCategory, deleteTestCategory } from '../../../lib/category-helpers.js';
-import { createExtra, type TypedHandler } from '../../../lib/create-extra.js';
-import createMiddlewareContext from '../../../lib/create-middleware-context.js';
-import waitForCategory from '../../../lib/wait-for-category.js';
+import categoriesFactory, { type Output as CategoriesOutput } from '../../../../src/mcp/tools/categories-list.ts';
+import createTool, { type Input, type Output } from '../../../../src/mcp/tools/labels-list.ts';
+import { createTestCategory, deleteTestCategory } from '../../../lib/category-helpers.ts';
+import { createExtra, type TypedHandler } from '../../../lib/create-extra.ts';
+import createMiddlewareContext from '../../../lib/create-middleware-context.ts';
+import waitForCategory from '../../../lib/wait-for-category.ts';
 
 // Type for objects with a parse method (like Zod schemas)
 type SchemaLike = { parse: (data: unknown) => unknown };

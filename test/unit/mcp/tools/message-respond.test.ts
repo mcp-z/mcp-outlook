@@ -1,7 +1,7 @@
 import assert from 'assert';
-import createTool, { type Input } from '../../../../src/mcp/tools/message-respond.js';
-import { createExtra, type TypedHandler } from '../../../lib/create-extra.js';
-import createMiddlewareContext from '../../../lib/create-middleware-context.js';
+import createTool, { type Input } from '../../../../src/mcp/tools/message-respond.ts';
+import { createExtra, type TypedHandler } from '../../../lib/create-extra.ts';
+import createMiddlewareContext from '../../../lib/create-middleware-context.ts';
 
 describe('outlook-message-respond', () => {
   let _wrappedTool: ReturnType<Awaited<ReturnType<typeof createMiddlewareContext>>['middleware']['withToolAuth']>;

@@ -1,2 +1,2 @@
-export * from './outlook-query-schema.js';
-export * from './outlook-validation.js';
+export * from './outlook-query-schema.ts';
+export * from './outlook-validation.ts';

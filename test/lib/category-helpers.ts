@@ -1,6 +1,6 @@
 import type { Client } from '@microsoft/microsoft-graph-client';
 import { setTimeout as delay } from 'timers/promises';
-import type { Logger } from '../../src/types.js';
+import type { Logger } from '../../src/types.ts';
 
 // Type for error objects that may have status/code properties
 type ErrorWithStatus = {

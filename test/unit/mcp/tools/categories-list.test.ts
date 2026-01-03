@@ -1,11 +1,11 @@
 import type { Logger, MicrosoftAuthProvider } from '@mcp-z/oauth-microsoft';
 import { Client } from '@microsoft/microsoft-graph-client';
 import assert from 'assert';
-import createTool, { type Input, type Output } from '../../../../src/mcp/tools/categories-list.js';
-import { createTestCategory, deleteTestCategory } from '../../../lib/category-helpers.js';
-import { createExtra, type TypedHandler } from '../../../lib/create-extra.js';
-import createMiddlewareContext from '../../../lib/create-middleware-context.js';
-import waitForCategory from '../../../lib/wait-for-category.js';
+import createTool, { type Input, type Output } from '../../../../src/mcp/tools/categories-list.ts';
+import { createTestCategory, deleteTestCategory } from '../../../lib/category-helpers.ts';
+import { createExtra, type TypedHandler } from '../../../lib/create-extra.ts';
+import createMiddlewareContext from '../../../lib/create-middleware-context.ts';
+import waitForCategory from '../../../lib/wait-for-category.ts';
 
 // Type for objects with an id property
 type ItemWithId = { id?: string; [key: string]: unknown };

@@ -8,7 +8,7 @@ import { Client } from '@microsoft/microsoft-graph-client';
 import type * as MicrosoftGraph from '@microsoft/microsoft-graph-types';
 import { type CallToolResult, ErrorCode, McpError } from '@modelcontextprotocol/sdk/types.js';
 import { z } from 'zod';
-import { OutlookCategorySchema } from '../../schemas/index.js';
+import { OutlookCategorySchema } from '../../schemas/index.ts';
 
 const inputSchema = z.object({});
 

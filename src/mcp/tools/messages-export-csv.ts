@@ -14,9 +14,9 @@ import { stringify } from 'csv-stringify/sync';
 import { createWriteStream } from 'fs';
 import { unlink } from 'fs/promises';
 import { z } from 'zod';
-import { executeQuery as executeOutlookQuery } from '../../email/querying/execute-query.js';
-import { OutlookQuerySchema } from '../../schemas/outlook-query-schema.js';
-import type { StorageExtra } from '../../types.js';
+import { executeQuery as executeOutlookQuery } from '../../email/querying/execute-query.ts';
+import { OutlookQuerySchema } from '../../schemas/outlook-query-schema.ts';
+import type { StorageExtra } from '../../types.ts';
 
 const DEFAULT_PAGE_SIZE = 50;
 const DEFAULT_MAX_ITEMS = 10000;
