@@ -10,7 +10,12 @@ import { type CallToolResult, ErrorCode, McpError } from '@modelcontextprotocol/
 import { z } from 'zod';
 import { OutlookCategorySchema } from '../../schemas/index.ts';
 
-const inputSchema = z.object({});
+/**
+ * Input schema for the categories-list tool
+ *
+ * Defines the validation schema for input parameters.
+ */
+export const inputSchema = z.object({});
 
 // Success branch schema
 const successBranchSchema = z.object({
@@ -29,6 +34,11 @@ const config = {
   }),
 } as const;
 
+/**
+ * Input type for the categories-list tool
+ *
+ * Represents the input parameters for listing Outlook categories.
+ */
 export type Input = z.infer<typeof inputSchema>;
 export type Output = z.infer<typeof outputSchema>;
 

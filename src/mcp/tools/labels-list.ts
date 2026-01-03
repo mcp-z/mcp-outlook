@@ -1,8 +1,5 @@
 import type { EnrichedExtra } from '@mcp-z/oauth-microsoft';
 import { schemas } from '@mcp-z/oauth-microsoft';
-
-const { AuthRequiredBranchSchema } = schemas;
-
 import type { ToolModule } from '@mcp-z/server';
 import { Client } from '@microsoft/microsoft-graph-client';
 import type * as MicrosoftGraph from '@microsoft/microsoft-graph-types';
@@ -10,7 +7,14 @@ import { type CallToolResult, ErrorCode, McpError } from '@modelcontextprotocol/
 import { z } from 'zod';
 import { OutlookCategorySchema } from '../../schemas/index.ts';
 
-const inputSchema = z.object({});
+const { AuthRequiredBranchSchema } = schemas;
+
+/**
+ * Input schema for the labels-list tool
+ *
+ * Defines the validation schema for input parameters.
+ */
+export const inputSchema = z.object({});
 
 // Success branch schema
 const successBranchSchema = z.object({
@@ -29,6 +33,11 @@ const config = {
   }),
 } as const;
 
+/**
+ * Input type for the labels-list tool
+ *
+ * Represents the input parameters for listing Outlook labels.
+ */
 export type Input = z.infer<typeof inputSchema>;
 export type Output = z.infer<typeof outputSchema>;
 
