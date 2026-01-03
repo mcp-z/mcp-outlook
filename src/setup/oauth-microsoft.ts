@@ -8,6 +8,9 @@ import type { ServerConfig } from '../types.ts';
 
 /**
  * Outlook OAuth runtime dependencies
+ *
+ * Contains the required dependencies for OAuth functionality including logger,
+ * token storage, and optional DCR store.
  */
 export interface OAuthRuntimeDeps {
   logger: Logger;
@@ -17,6 +20,8 @@ export interface OAuthRuntimeDeps {
 
 /**
  * Auth middleware wrapper with withToolAuth/withResourceAuth/withPromptAuth methods
+ *
+ * Provides authentication middleware methods for tools, resources, and prompts.
  */
 export interface AuthMiddleware {
   withToolAuth<T extends ToolModule>(module: T): T;
@@ -26,6 +31,9 @@ export interface AuthMiddleware {
 
 /**
  * Result of OAuth adapter creation
+ *
+ * Contains the primary OAuth adapter, middleware, auth adapter,
+ * account tools, prompts, and optional routers.
  */
 export interface OAuthAdapters {
   primary: LoopbackOAuthProvider | DeviceCodeProvider | DcrOAuthProvider;

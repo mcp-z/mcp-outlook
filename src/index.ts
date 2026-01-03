@@ -5,8 +5,14 @@ import type { ServerConfig } from './types.ts';
 
 export { MS_SCOPE } from './constants.ts';
 export * as mcp from './mcp/index.ts';
+// Export input schemas for documentation visibility
+export type { Input as CategoriesListInput } from './mcp/tools/categories-list.ts';
+export { inputSchema as categoriesListInputSchema } from './mcp/tools/categories-list.ts';
+export type { Input as LabelsListInput } from './mcp/tools/labels-list.ts';
+export { inputSchema as labelsListInputSchema } from './mcp/tools/labels-list.ts';
 export * as schemas from './schemas/index.ts';
 export * as setup from './setup/index.ts';
+export type { AuthMiddleware, OAuthAdapters, OAuthRuntimeDeps } from './setup/oauth-microsoft.ts';
 export * from './types.ts';
 
 export async function startServer(config: ServerConfig): Promise<void> {
