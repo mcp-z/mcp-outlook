@@ -1,5 +1,5 @@
 import type { Client as GraphClient } from '@microsoft/microsoft-graph-client';
-import type { Logger } from '../../src/types.js';
+import type { Logger } from '../../src/types.ts';
 
 // Type for error objects that may have status/code properties
 type ErrorWithStatus = {

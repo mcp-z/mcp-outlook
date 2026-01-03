@@ -1,8 +1,8 @@
 import type { ExecutionResult } from '@mcp-z/email';
 import type { Client } from '@microsoft/microsoft-graph-client';
-import type { OutlookQuery as QueryNode } from '../../schemas/outlook-query-schema.js';
-import type { Logger } from '../../types.js';
-import { searchMessages } from './search-execution.js';
+import type { OutlookQuery as QueryNode } from '../../schemas/outlook-query-schema.ts';
+import type { Logger } from '../../types.ts';
+import { searchMessages } from './search-execution.ts';
 
 export interface ExecuteQueryOptions {
   readonly logger: Logger;

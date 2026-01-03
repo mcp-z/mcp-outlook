@@ -1,7 +1,7 @@
 import type { Client } from '@microsoft/microsoft-graph-client';
 import { setTimeout as delay } from 'timers/promises';
-import { toGraphFilter } from '../../src/email/querying/query-builder.js';
-import type { OutlookQuery } from '../../src/schemas/outlook-query-schema.js';
+import { toGraphFilter } from '../../src/email/querying/query-builder.ts';
+import type { OutlookQuery } from '../../src/schemas/outlook-query-schema.ts';
 
 // Type for error objects that may have status/code properties
 type ErrorWithStatus = {

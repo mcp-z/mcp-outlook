@@ -1,7 +1,7 @@
 import type { DcrConfig, OAuthConfig } from '@mcp-z/oauth-microsoft';
 import type { BaseServerConfig, MiddlewareLayer, PromptModule, ResourceModule, Logger as ServerLogger, ToolModule } from '@mcp-z/server';
 import type { Keyv } from 'keyv';
-import type { OAuthAdapters } from './setup/oauth-microsoft.js';
+import type { OAuthAdapters } from './setup/oauth-microsoft.ts';
 
 export type Logger = Pick<Console, 'info' | 'error' | 'warn' | 'debug'>;
 
@@ -65,4 +65,4 @@ export interface RuntimeOverrides {
   createDomainModules?: () => DomainModules;
 }
 
-export type { EmailAddress, OneDriveFile, OutlookAttachment, OutlookCalendarEvent, OutlookCategory, OutlookContact, OutlookFolder, OutlookMessage, OutlookQuery, OutlookSystemCategory, Recipient } from './schemas/index.js';
+export type { EmailAddress, OneDriveFile, OutlookAttachment, OutlookCalendarEvent, OutlookCategory, OutlookContact, OutlookFolder, OutlookMessage, OutlookQuery, OutlookSystemCategory, Recipient } from './schemas/index.ts';

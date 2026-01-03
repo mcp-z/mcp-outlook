@@ -1,6 +1,6 @@
 import type { Client } from '@microsoft/microsoft-graph-client';
-import type { OutlookMessage } from '../../lib/outlook/types.js';
-import { mapOutlookMessage, type NormalizedMessage } from './message-mapping.js';
+import type { OutlookMessage } from '../../lib/outlook/types.ts';
+import { mapOutlookMessage, type NormalizedMessage } from './message-mapping.ts';
 
 /** Fetch a single Outlook message. Throws on non-OK Graph responses. */
 export async function fetchOutlookMessage(graph: Client, id: string): Promise<NormalizedMessage> {

@@ -1,5 +1,5 @@
 import assert from 'assert';
-import { toRowFromOutlook } from '../../../src/lib/messages-to-row.js';
+import { toRowFromOutlook } from '../../../src/lib/messages-to-row.ts';
 
 // --- Date normalization + address formatting ---------------------------------
 it('toRowFromOutlook: normalizes receivedDateTime to ISO8601 UTC', () => {

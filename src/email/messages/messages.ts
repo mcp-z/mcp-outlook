@@ -1,6 +1,6 @@
 import { buildContentForItems, stripHtml, normalizeDateToISO as toIsoUtc } from '@mcp-z/email';
-import type { OutlookMessage } from '../../lib/outlook/types.js';
-import { extractFrom, formatAddressList } from '../parsing/header-parsing.js';
+import type { OutlookMessage } from '../../lib/outlook/types.ts';
+import { extractFrom, formatAddressList } from '../parsing/header-parsing.ts';
 
 export { buildContentForItems };
 

@@ -1,4 +1,4 @@
-import type { OutlookQuery as QueryNode } from '../../schemas/outlook-query-schema.js';
+import type { OutlookQuery as QueryNode } from '../../schemas/outlook-query-schema.ts';
 
 type FieldOperator = {
   $any?: string[];

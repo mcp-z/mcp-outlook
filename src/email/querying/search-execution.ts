@@ -1,8 +1,8 @@
 import type { Client } from '@microsoft/microsoft-graph-client';
 import type { Message } from '@microsoft/microsoft-graph-types';
-import type { OutlookQuery as QueryNode } from '../../schemas/outlook-query-schema.js';
-import type { Logger } from '../../types.js';
-import { toGraphFilter } from './query-builder.js';
+import type { OutlookQuery as QueryNode } from '../../schemas/outlook-query-schema.ts';
+import type { Logger } from '../../types.ts';
+import { toGraphFilter } from './query-builder.ts';
 
 export interface OutlookSearchOptions {
   query?: QueryNode;

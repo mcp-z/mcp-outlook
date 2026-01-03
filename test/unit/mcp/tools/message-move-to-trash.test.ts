@@ -1,11 +1,11 @@
 import type { Logger, MicrosoftAuthProvider } from '@mcp-z/oauth-microsoft';
 import { Client } from '@microsoft/microsoft-graph-client';
 import assert from 'assert';
-import createTool, { type Input, type Output } from '../../../../src/mcp/tools/message-move-to-trash.js';
-import { createExtra, type TypedHandler } from '../../../lib/create-extra.js';
-import createMiddlewareContext from '../../../lib/create-middleware-context.js';
-import { createTestDraftMessage, deleteTestMessage } from '../../../lib/message-helpers.js';
-import waitForMessage from '../../../lib/wait-for-message.js';
+import createTool, { type Input, type Output } from '../../../../src/mcp/tools/message-move-to-trash.ts';
+import { createExtra, type TypedHandler } from '../../../lib/create-extra.ts';
+import createMiddlewareContext from '../../../lib/create-middleware-context.ts';
+import { createTestDraftMessage, deleteTestMessage } from '../../../lib/message-helpers.ts';
+import waitForMessage from '../../../lib/wait-for-message.ts';
 
 // Type for objects with a parse method (like Zod schemas)
 type SchemaLike = { parse: (data: unknown) => unknown };

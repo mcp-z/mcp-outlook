@@ -1,12 +1,12 @@
 import type { Logger, MicrosoftAuthProvider } from '@mcp-z/oauth-microsoft';
 import { Client } from '@microsoft/microsoft-graph-client';
 import assert from 'assert';
-import messageGetFactory, { type Output as MessageGetOutput } from '../../../../src/mcp/tools/message-get.js';
-import createTool, { type Input, type Output } from '../../../../src/mcp/tools/message-search.js';
-import { createExtra, type TypedHandler } from '../../../lib/create-extra.js';
-import createMiddlewareContext from '../../../lib/create-middleware-context.js';
-import { createTestDraftMessage, createTestMessage, deleteTestMessage } from '../../../lib/message-helpers.js';
-import waitForSearch from '../../../lib/wait-for-search.js';
+import messageGetFactory, { type Output as MessageGetOutput } from '../../../../src/mcp/tools/message-get.ts';
+import createTool, { type Input, type Output } from '../../../../src/mcp/tools/message-search.ts';
+import { createExtra, type TypedHandler } from '../../../lib/create-extra.ts';
+import createMiddlewareContext from '../../../lib/create-middleware-context.ts';
+import { createTestDraftMessage, createTestMessage, deleteTestMessage } from '../../../lib/message-helpers.ts';
+import waitForSearch from '../../../lib/wait-for-search.ts';
 
 // Type for objects with a parse method (like Zod schemas)
 type SchemaLike = { parse: (data: unknown) => unknown };
