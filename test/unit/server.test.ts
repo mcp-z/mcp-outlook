@@ -48,7 +48,7 @@ describe('createHTTPServer - transport initialization', () => {
       headless: true,
       logLevel: 'error',
       auth: 'loopback-oauth',
-      storageDir: path.join(testContextPath, 'files'),
+      resourceStoreUri: `file://${path.join(testContextPath, 'files')}`,
       repositoryUrl: 'https://github.com/mcp-z/mcp-outlook',
     };
 
@@ -72,7 +72,7 @@ describe('createHTTPServer - transport initialization', () => {
       headless: true,
       logLevel: 'error',
       auth: 'loopback-oauth',
-      storageDir: path.join(testContextPath, 'files'),
+      resourceStoreUri: `file://${path.join(testContextPath, 'files')}`,
       repositoryUrl: 'https://github.com/mcp-z/mcp-outlook',
     };
 
@@ -97,7 +97,7 @@ describe('createHTTPServer - transport initialization', () => {
       headless: true,
       logLevel: 'error',
       auth: 'loopback-oauth',
-      storageDir: path.join(testContextPath, 'files'),
+      resourceStoreUri: `file://${path.join(testContextPath, 'files')}`,
       repositoryUrl: 'https://github.com/mcp-z/mcp-outlook',
     };
 

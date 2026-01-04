@@ -30,7 +30,7 @@ Options:
   --port=<port>          Enable HTTP transport on specified port
   --stdio                Enable stdio transport (default if no port)
   --log-level=<level>    Logging level (default: info)
-  --storage-dir=<path>   Directory for CSV file storage (default: .mcp-z/files)
+  --resource-store-uri=<uri>    Resource store URI for CSV file storage (default: file://~/.mcp-z/mcp-outlook/files)
   --base-url=<url>       Base URL for HTTP file serving (default: http://localhost for HTTP transports)
 
 Environment Variables:
@@ -42,9 +42,10 @@ Environment Variables:
   DCR_MODE               DCR mode (optional, same format as --dcr-mode)
   DCR_VERIFY_URL         External verification URL (optional, same as --dcr-verify-url)
   DCR_STORE_URI          DCR storage URI (optional, same as --dcr-store-uri)
+  TOKEN_STORE_URI        Token storage URI (optional)
   PORT                   Default HTTP port (optional)
   LOG_LEVEL              Default logging level (optional)
-  STORAGE_DIR            Directory for CSV file storage (optional)
+  RESOURCE_STORE_URI            Resource store URI (optional, file://)
   BASE_URL               Base URL for HTTP file serving (optional)
 
 OAuth Scopes:
@@ -55,7 +56,7 @@ Examples:
   mcp-outlook --auth=device-code        # Use device code auth
   mcp-outlook --port=3000               # HTTP transport on port 3000
   mcp-outlook --tenant-id=xxx           # Set tenant ID
-  mcp-outlook --storage-dir=./emails    # Custom storage directory
+  mcp-outlook --resource-store-uri=file:///tmp/emails    # Custom resource store URI
   MS_CLIENT_ID=xxx mcp-outlook          # Set client ID via env var
 `.trim();
 
@@ -93,7 +94,7 @@ export function handleVersionHelp(args: string[]): { handled: boolean; output?: 
  * - --port=<port>          Enable HTTP transport on specified port
  * - --stdio                Enable stdio transport (default if no port)
  * - --log-level=<level>    Logging level (default: info)
- * - --storage-dir=<path>   Directory for CSV file storage (default: .mcp-z/files)
+ * - --resource-store-uri=<uri>    Resource store URI for CSV file storage (default: file://~/.mcp-z/mcp-outlook/files)
  * - --base-url=<url>       Base URL for HTTP file serving (default: http://localhost for HTTP transports)
  *
  * Environment Variables:
@@ -105,9 +106,10 @@ export function handleVersionHelp(args: string[]): { handled: boolean; output?: 
  * - DCR_MODE               DCR mode (optional, same format as --dcr-mode)
  * - DCR_VERIFY_URL         External verification URL (optional, same as --dcr-verify-url)
  * - DCR_STORE_URI          DCR storage URI (optional, same as --dcr-store-uri)
+ * - TOKEN_STORE_URI        Token storage URI (optional)
  * - PORT                   Default HTTP port (optional)
  * - LOG_LEVEL              Default logging level (optional)
- * - STORAGE_DIR            Directory for CSV file storage (optional)
+ * - RESOURCE_STORE_URI            Resource store URI (optional, file://)
  * - BASE_URL               Base URL for HTTP file serving (optional)
  *
  * OAuth Scopes (from constants.ts):
@@ -120,13 +122,13 @@ export function parseConfig(args: string[], env: Record<string, string | undefin
   // Parse DCR configuration if DCR mode is enabled
   const dcrConfig = oauthConfig.auth === 'dcr' ? parseDcrConfig(args, env, MS_SCOPE) : undefined;
 
-  // Parse application-level config (LOG_LEVEL, STORAGE_DIR, BASE_URL)
+  // Parse application-level config (LOG_LEVEL, RESOURCE_STORE_URI, BASE_URL)
   const { values } = parseArgs({
     args,
     options: {
       'log-level': { type: 'string' },
       'base-url': { type: 'string' },
-      'storage-dir': { type: 'string' },
+      'resource-store-uri': { type: 'string' },
     },
     strict: false, // Allow other arguments
     allowPositionals: true,
@@ -149,10 +151,10 @@ export function parseConfig(args: string[], env: Record<string, string | undefin
   const logLevel = cliLogLevel ?? envLogLevel ?? 'info';
 
   // Parse file storage configuration
-  const cliStorageDir = typeof values['storage-dir'] === 'string' ? values['storage-dir'] : undefined;
-  const envStorageDir = env.STORAGE_DIR;
-  let storageDir = cliStorageDir ?? envStorageDir ?? path.join(baseDir, name, 'files');
-  if (storageDir.startsWith('~')) storageDir = storageDir.replace(/^~/, homedir());
+  const cliResourceStoreUri = typeof values['resource-store-uri'] === 'string' ? values['resource-store-uri'] : undefined;
+  const envResourceStoreUri = env.RESOURCE_STORE_URI;
+  const defaultResourceStorePath = path.join(baseDir, name, 'files');
+  const resourceStoreUri = normalizeResourceStoreUri(cliResourceStoreUri ?? envResourceStoreUri ?? defaultResourceStorePath);
 
   const cliBaseUrl = typeof values['base-url'] === 'string' ? values['base-url'] : undefined;
   const envBaseUrl = env.BASE_URL;
@@ -167,7 +169,7 @@ export function parseConfig(args: string[], env: Record<string, string | undefin
     name,
     version: pkg.version,
     repositoryUrl,
-    storageDir: path.resolve(storageDir),
+    resourceStoreUri,
   };
   if (baseUrl !== undefined) result.baseUrl = baseUrl;
   if (dcrConfig !== undefined) result.dcrConfig = dcrConfig;
@@ -180,4 +182,18 @@ export function parseConfig(args: string[], env: Record<string, string | undefin
  */
 export function createConfig(): ServerConfig {
   return parseConfig(process.argv, process.env);
+}
+
+function normalizeResourceStoreUri(resourceStoreUri: string): string {
+  const filePrefix = 'file://';
+  if (resourceStoreUri.startsWith(filePrefix)) {
+    const rawPath = resourceStoreUri.slice(filePrefix.length);
+    const expandedPath = rawPath.startsWith('~') ? rawPath.replace(/^~/, homedir()) : rawPath;
+    return `${filePrefix}${path.resolve(expandedPath)}`;
+  }
+
+  if (resourceStoreUri.includes('://')) return resourceStoreUri;
+
+  const expandedPath = resourceStoreUri.startsWith('~') ? resourceStoreUri.replace(/^~/, homedir()) : resourceStoreUri;
+  return `${filePrefix}${path.resolve(expandedPath)}`;
 }
