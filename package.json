@@ -1,6 +1,6 @@
 {
   "name": "@mcp-z/mcp-outlook",
-  "version": "1.0.6",
+  "version": "1.0.7",
   "description": "MCP server for Outlook integration with OAuth authentication, message search, and batch operations",
   "keywords": [
     "outlook",
