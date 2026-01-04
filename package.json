@@ -72,9 +72,9 @@
     "version": "tsds version"
   },
   "dependencies": {
-    "@mcp-z/email": "^1.0.0",
+    "@mcp-z/email": "^1.0.2",
     "@mcp-z/oauth": "^1.0.1",
-    "@mcp-z/oauth-microsoft": "^1.0.3",
+    "@mcp-z/oauth-microsoft": "^1.0.4",
     "@mcp-z/server": "^1.0.2",
     "@microsoft/microsoft-graph-client": "^3.0.7",
     "@microsoft/microsoft-graph-types": "^2.43.1",
@@ -88,7 +88,7 @@
     "zod": "^4.3.4"
   },
   "devDependencies": {
-    "@mcp-z/client": "^1.0.3",
+    "@mcp-z/client": "^1.0.5",
     "@types/cors": "^2.8.19",
     "@types/express": "^5.0.6",
     "@types/mocha": "^10.0.10",
