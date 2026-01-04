@@ -120,13 +120,13 @@ export function parseConfig(args: string[], env: Record<string, string | undefin
   // Parse DCR configuration if DCR mode is enabled
   const dcrConfig = oauthConfig.auth === 'dcr' ? parseDcrConfig(args, env, MS_SCOPE) : undefined;
 
-  // Parse application-level config (LOG_LEVEL, storage options)
+  // Parse application-level config (LOG_LEVEL, STORAGE_DIR, BASE_URL)
   const { values } = parseArgs({
     args,
     options: {
       'log-level': { type: 'string' },
-      'storage-dir': { type: 'string' },
       'base-url': { type: 'string' },
+      'storage-dir': { type: 'string' },
     },
     strict: false, // Allow other arguments
     allowPositionals: true,
