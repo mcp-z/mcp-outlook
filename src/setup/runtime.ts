@@ -17,8 +17,8 @@ export function createLogger(config: ServerConfig): Logger {
 }
 
 export async function createTokenStore(baseDir: string) {
-  const storeUri = process.env.STORE_URI || `file://${path.join(baseDir, 'tokens.json')}`;
-  return createStore<unknown>(storeUri);
+  const tokenStoreUri = process.env.TOKEN_STORE_URI || `file://${path.join(baseDir, 'tokens.json')}`;
+  return createStore<unknown>(tokenStoreUri);
 }
 
 export async function createDcrStore(baseDir: string, required: boolean) {
@@ -66,8 +66,8 @@ export function createStorageLayer(storageContext: StorageContext): MiddlewareLa
 }
 
 export function assertStorageConfig(config: ServerConfig) {
-  if (!config.storageDir) {
-    throw new Error('outlook-messages-export-csv: Server configuration missing storageDir.');
+  if (!config.resourceStoreUri) {
+    throw new Error('outlook-messages-export-csv: Server configuration missing resourceStoreUri.');
   }
   if (config.transport.type === 'http' && !config.baseUrl && !config.transport.port) {
     throw new Error('outlook-messages-export-csv: HTTP transport requires either baseUrl in server config or port in transport config. This is a server configuration error - please provide --base-url or --port.');
@@ -91,7 +91,7 @@ export async function createDefaultRuntime(config: ServerConfig, overrides?: Run
       resources: Object.values(mcp.resourceFactories).map((factory) => factory()),
       prompts: Object.values(mcp.promptFactories).map((factory) => factory()),
     }));
-  const middlewareFactories = overrides?.middlewareFactories ?? [() => createAuthLayer(oauthAdapters.middleware), () => createLoggingLayer(logger), () => createStorageLayer({ storageDir: config.storageDir, baseUrl: config.baseUrl, transport: config.transport })];
+  const middlewareFactories = overrides?.middlewareFactories ?? [() => createAuthLayer(oauthAdapters.middleware), () => createLoggingLayer(logger), () => createStorageLayer({ resourceStoreUri: config.resourceStoreUri, baseUrl: config.baseUrl, transport: config.transport })];
 
   return {
     deps,
