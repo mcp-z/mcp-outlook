@@ -10,10 +10,10 @@ import type * as MicrosoftGraph from '@microsoft/microsoft-graph-types';
 import { type CallToolResult, ErrorCode, McpError } from '@modelcontextprotocol/sdk/types.js';
 import { z } from 'zod';
 import { executeQuery as executeOutlookQuery } from '../../email/querying/execute-query.ts';
-import { OutlookQuerySchema } from '../../schemas/outlook-query-schema.ts';
+import { OutlookQueryParameterSchema } from '../../schemas/outlook-query-schema.ts';
 
 const inputSchema = z.object({
-  query: OutlookQuerySchema.optional().describe('Structured query object for filtering messages. Use query-syntax prompt for reference.'),
+  query: OutlookQueryParameterSchema.optional().describe('Structured query object or JSON string for filtering messages. Use query-syntax prompt for reference and kqlQuery for KQL syntax.'),
   fields: createFieldsSchema({
     availableFields: EMAIL_FIELDS,
     fieldDescriptions: EMAIL_FIELD_DESCRIPTIONS,

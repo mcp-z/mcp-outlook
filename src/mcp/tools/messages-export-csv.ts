@@ -15,7 +15,7 @@ import { createWriteStream } from 'fs';
 import { unlink } from 'fs/promises';
 import { z } from 'zod';
 import { executeQuery as executeOutlookQuery } from '../../email/querying/execute-query.ts';
-import { OutlookQuerySchema } from '../../schemas/outlook-query-schema.ts';
+import { OutlookQueryParameterSchema } from '../../schemas/outlook-query-schema.ts';
 import type { StorageExtra } from '../../types.ts';
 
 const DEFAULT_PAGE_SIZE = 50;
@@ -30,7 +30,7 @@ const ExportResultSchema = z.object({
 });
 
 const inputSchema = z.object({
-  query: OutlookQuerySchema.optional().describe('Structured query object for filtering messages. Use query-syntax prompt for reference.'),
+  query: OutlookQueryParameterSchema.optional().describe('Structured query object or JSON string for filtering messages. Use query-syntax prompt for reference and kqlQuery for KQL syntax.'),
   maxItems: z.number().int().positive().max(MAX_EXPORT_ITEMS).default(DEFAULT_MAX_ITEMS).describe(`Maximum messages to export (default: ${DEFAULT_MAX_ITEMS}, max: ${MAX_EXPORT_ITEMS})`),
   filename: z.string().trim().min(1).default('outlook-messages.csv').describe('Output filename (default: outlook-messages.csv)'),
   contentType: EmailContentTypeSchema,
