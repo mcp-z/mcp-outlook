@@ -4,6 +4,7 @@ import assert from 'assert';
 import type { ZodTypeAny } from 'zod';
 import categoriesFactory, { type Output as CategoriesOutput } from '../../../../src/mcp/tools/categories-list.ts';
 import createTool, { type Input, type Output } from '../../../../src/mcp/tools/labels-list.ts';
+import { assertSuccess } from '../../../lib/assertions.ts';
 import { createTestCategory, deleteTestCategory } from '../../../lib/category-helpers.ts';
 import { createExtra, type TypedHandler } from '../../../lib/create-extra.ts';
 import createMiddlewareContext from '../../../lib/create-middleware-context.ts';
@@ -54,62 +55,26 @@ describe('outlook-labels-list tool', () => {
     }
 
     const result = res.structuredContent?.result as Output | undefined;
+    assertSuccess(result, 'labels list response');
 
-    // Test different response types based on actual result
-    if (result?.type === 'success') {
-      // Validate success response structure
-      assert.ok(Array.isArray(result.items), 'success response should have items array');
+    // Validate success response structure
+    assert.ok(Array.isArray(result.items), 'success response should have items array');
 
-      // If labels/categories exist, validate their structure
-      if (result.items.length > 0) {
-        const label = result.items[0];
-        if (label) {
-          assert.ok(typeof label.id === 'string', 'label should have string id');
-          assert.ok(typeof label.displayName === 'string', 'label should have string displayName');
-          assert.ok(typeof label.color === 'string', 'label should have string color');
+    // If labels/categories exist, validate their structure
+    if (result.items.length > 0) {
+      const label = result.items[0];
+      if (label) {
+        assert.ok(typeof label.id === 'string', 'label should have string id');
+        assert.ok(typeof label.displayName === 'string', 'label should have string displayName');
+        assert.ok(typeof label.color === 'string', 'label should have string color');
 
-          // Validate color is a valid Outlook preset color
-          const validColors = [
-            'preset0',
-            'preset1',
-            'preset2',
-            'preset3',
-            'preset4',
-            'preset5',
-            'preset6',
-            'preset7',
-            'preset8',
-            'preset9',
-            'preset10',
-            'preset11',
-            'preset12',
-            'preset13',
-            'preset14',
-            'preset15',
-            'preset16',
-            'preset17',
-            'preset18',
-            'preset19',
-            'preset20',
-            'preset21',
-            'preset22',
-            'preset23',
-            'preset24',
-          ];
-          assert.ok(validColors.includes(label.color), `label color should be valid preset: ${label.color}`);
+        // Validate color is a valid Outlook preset color
+        const validColors = ['preset0', 'preset1', 'preset2', 'preset3', 'preset4', 'preset5', 'preset6', 'preset7', 'preset8', 'preset9', 'preset10', 'preset11', 'preset12', 'preset13', 'preset14', 'preset15', 'preset16', 'preset17', 'preset18', 'preset19', 'preset20', 'preset21', 'preset22', 'preset23', 'preset24'];
+        assert.ok(validColors.includes(label.color), `label color should be valid preset: ${label.color}`);
 
-          // Verify case-sensitive handling - displayName should preserve exact case
-          assert.strictEqual(typeof label.displayName, 'string');
-          assert.ok(label.displayName.length > 0);
-        }
-      }
-    } else if (result?.type === 'auth_required') {
-      // Validate auth_required response
-      assert.ok(typeof result.provider === 'string', 'auth_required should have provider');
-      assert.ok(typeof result.message === 'string', 'auth_required should have message');
-      // url is optional in auth_required
-      if (result.url) {
-        assert.ok(typeof result.url === 'string', 'auth_required url should be string');
+        // Verify case-sensitive handling - displayName should preserve exact case
+        assert.strictEqual(typeof label.displayName, 'string');
+        assert.ok(label.displayName.length > 0);
       }
     }
   });

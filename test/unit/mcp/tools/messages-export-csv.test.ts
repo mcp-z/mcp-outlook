@@ -353,26 +353,21 @@ describe('Outlook messages export CSV tool (directory creation)', () => {
 
     it('handles invalid query gracefully', async () => {
       // Query with invalid field
-      const result = await exportCsvHandler(
-        {
-          query: { invalidField: 'test' },
-          maxItems: 5,
-          filename: 'test-invalid-query.csv',
-          contentType: 'text',
-          excludeThreadHistory: false,
-        } as Input,
-        createExtra(storageContext)
-      );
-
-      // Should either succeed with empty/filtered results or return error
-      const structured = result?.structuredContent?.result as Output | undefined;
-      assert.ok(structured, 'Should return structured result');
-      assert.ok(['success', 'auth_required'].includes(structured?.type), 'Should handle invalid query gracefully');
-
-      if (structured?.type === 'success') {
-        // File should exist even if no results
-        const csvPath = path.join(testStorageDir, structured.filename);
-        assert.strictEqual(existsSync(csvPath), true, 'CSV file should exist');
+      try {
+        await exportCsvHandler(
+          {
+            query: { invalidField: 'test' },
+            maxItems: 5,
+            filename: 'test-invalid-query.csv',
+            contentType: 'text',
+            excludeThreadHistory: false,
+          } as Input,
+          createExtra(storageContext)
+        );
+        assert.fail('Expected invalid query to throw');
+      } catch (err) {
+        const message = err instanceof Error ? err.message : String(err);
+        assert.ok(message.includes('Invalid query JSON') || message.includes('Error exporting messages'), 'error should indicate invalid query');
       }
     });
 

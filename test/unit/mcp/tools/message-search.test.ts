@@ -3,6 +3,7 @@ import { Client } from '@microsoft/microsoft-graph-client';
 import assert from 'assert';
 import messageGetFactory, { type Output as MessageGetOutput } from '../../../../src/mcp/tools/message-get.ts';
 import createTool, { type Input, type Output } from '../../../../src/mcp/tools/message-search.ts';
+import { assertObjectsShape, assertSuccess } from '../../../lib/assertions.ts';
 import { createExtra, type TypedHandler } from '../../../lib/create-extra.ts';
 import createMiddlewareContext from '../../../lib/create-middleware-context.ts';
 import { createTestDraftMessage, createTestMessage, deleteTestMessage } from '../../../lib/message-helpers.ts';
@@ -23,12 +24,18 @@ type ItemWithId = { id: string | undefined; subject?: string | undefined; [key: 
 
 // Type guard for objects shape output
 function isObjectsShape(branch: Output | undefined): branch is Extract<Output, { shape: 'objects' }> {
-  return branch?.type === 'success' && branch.shape === 'objects';
+  try {
+    assertObjectsShape(branch, 'message_search objects shape');
+    return true;
+  } catch {
+    return false;
+  }
 }
 
 describe('message_search', () => {
   // Generate unique test identifier for scoped queries
   const runId = `test-${Date.now()}-${Math.random().toString(36).slice(2, 9)}`;
+  const safeRunId = runId.replace(/[^a-z0-9]/gi, '');
 
   // Shared instances for all tests
   let auth: MicrosoftAuthProvider;
@@ -72,8 +79,7 @@ describe('message_search', () => {
       );
 
       const branch = result.structuredContent?.result as Output | undefined;
-      assert.ok(branch, 'should return structured result');
-      assert.strictEqual(branch.type, 'success', 'should be success type');
+      assertSuccess(branch, 'arrays response');
 
       if (branch.type === 'success') {
         assert.strictEqual(branch.shape, 'arrays', 'shape should be arrays');
@@ -91,7 +97,7 @@ describe('message_search', () => {
 
     it('search returns structured content (or structured error) without throwing', async () => {
       // Use scoped query to avoid large result sets from entire mailbox
-      const uniqueQuery = `subject:"test-${runId}"`;
+      const uniqueQuery = { subject: `test${safeRunId}` };
       const result = await handler({ query: uniqueQuery, pageSize: 5, pageToken: undefined, fields: 'id', shape: 'objects', contentType: 'text', excludeThreadHistory: false } as Input, createExtra());
 
       assert.ok(result, 'should return result');
@@ -121,6 +127,79 @@ describe('message_search', () => {
     });
   });
 
+  describe('query input formats', () => {
+    let messageId: string | undefined;
+    let subject: string;
+    let body: string;
+    let kqlQuery: string;
+    const randomAlpha = (length: number) => {
+      let value = '';
+      while (value.length < length) {
+        value += Math.random()
+          .toString(36)
+          .replace(/[^a-z]+/g, '');
+      }
+      return value.slice(0, length);
+    };
+
+    before(async () => {
+      subject = `Query Format ${runId}`;
+      body = `queryformat${randomAlpha(8)}`;
+      kqlQuery = `"${body}"`;
+      messageId = await createTestMessage(sharedGraph, {
+        from: { address: testAccountEmail },
+        to: testAccountEmail,
+        subject,
+        body,
+      });
+      await waitForSearch(sharedGraph, { body }, { expectedId: messageId, timeout: 20000 });
+    });
+
+    after(async () => {
+      if (messageId) {
+        await deleteTestMessage(sharedGraph, messageId, logger);
+      }
+    });
+
+    async function assertFound(query: Input['query']) {
+      const result = await handler(
+        {
+          query,
+          pageSize: 5,
+          fields: 'id,subject',
+          shape: 'objects',
+          contentType: 'text',
+          excludeThreadHistory: false,
+        } as Input,
+        createExtra()
+      );
+
+      const branch = result.structuredContent?.result as Output | undefined;
+      assert.ok(branch && branch.type === 'success', 'expected success result');
+      if (!isObjectsShape(branch)) {
+        assert.fail('expected objects shape');
+      }
+      const found = branch.items.some((item: ItemWithId) => item.id === messageId);
+      assert.ok(found, 'should find the test message');
+    }
+
+    it('accepts structured query objects', async () => {
+      await assertFound({ body });
+    });
+
+    it('accepts structured query JSON strings', async () => {
+      await assertFound(JSON.stringify({ body }));
+    });
+
+    it('accepts kqlQuery objects', async () => {
+      await assertFound({ kqlQuery });
+    });
+
+    it('accepts kqlQuery JSON strings', async () => {
+      await assertFound(JSON.stringify({ kqlQuery }));
+    });
+  });
+
   describe('token bloat and schema fixes', () => {
     it('documents pageSize fix: now includes limit parameter', () => {
       const expectedBehavior = {
@@ -138,7 +217,7 @@ describe('message_search', () => {
   describe('fields parameter tests', () => {
     it('default multiple fields returns full message items', async () => {
       // Use scoped query to avoid large result sets
-      const uniqueQuery = `subject:"test-${runId}"`;
+      const uniqueQuery = { subject: `test${safeRunId}` };
       const result = await handler(
         {
           query: uniqueQuery,
@@ -190,7 +269,7 @@ describe('message_search', () => {
 
     it('multiple fields explicitly returns full message items', async () => {
       // Use scoped query to avoid large result sets
-      const uniqueQuery = `subject:"test-${runId}"`;
+      const uniqueQuery = { subject: `test${safeRunId}` };
       const result = await handler(
         {
           query: uniqueQuery,
@@ -223,7 +302,7 @@ describe('message_search', () => {
 
     it('minimal fields returns items only', async () => {
       // Use scoped query to avoid large result sets
-      const uniqueQuery = `subject:"test-${runId}"`;
+      const uniqueQuery = { subject: `test${safeRunId}` };
       const result = await handler(
         {
           query: uniqueQuery,
@@ -257,7 +336,7 @@ describe('message_search', () => {
 
     it('minimal fields preserves pagination with items', async () => {
       // Use scoped query to avoid large result sets
-      const uniqueQuery = `subject:"test-${runId}"`;
+      const uniqueQuery = { subject: `test${safeRunId}` };
 
       // Get first page with minimal fields
       const firstPage = await handler(
@@ -365,13 +444,12 @@ describe('message_search', () => {
     });
   });
 
-  describe('integration tests', () => {
-    it('runs against real Microsoft Graph using .env.test creds', async () => {
-      // This test is service-backed and requires valid .env.test credentials loaded by dotenvx in the test harness.
+  describe('integration scenarios for structured search', () => {
+    it('returns structured results for a scoped subject query', async () => {
       const testHandler = (opts: unknown = {}) => handler(opts as Input, createExtra());
 
-      // Use a scoped query to avoid large result sets from entire mailbox
-      const uniqueQuery = `subject:"test-${runId}"`;
+      // Use a scoped query to avoid large result sets from the mailbox
+      const uniqueQuery = { subject: `test${safeRunId}` };
       const result = await testHandler({
         query: uniqueQuery,
         pageSize: 10,
@@ -405,7 +483,7 @@ describe('message_search', () => {
 
       // Use a scoped query with hyphenated terms to test syntax handling
       // This tests both scoped querying and hyphenated term handling
-      const hyphenatedQuery = `subject:"test-${runId}" OR subject:"no-reply"`;
+      const hyphenatedQuery = { text: { $any: [`test-${safeRunId}`, 'no-reply'] } };
       const result = await testHandler({
         query: hyphenatedQuery,
         pageSize: 10,
@@ -417,20 +495,12 @@ describe('message_search', () => {
       assert.ok(!result?.error, `unexpected error: ${JSON.stringify(result?.error)}`);
       assert.ok(result && result.structuredContent && result.structuredContent, 'expected structuredContent.result');
       const branch: Output | undefined = result.structuredContent?.result as Output;
-      // Accept either success (preferred) or auth_required
       assert.ok(branch, 'branch should exist');
-      if (isObjectsShape(branch)) {
-        // success branch with objects shape
-        assert.equal(branch.type, 'success', 'expected success branch');
-        const items = branch.items;
-        assert.ok(Array.isArray(items), 'expected items array in successful response');
-      } else if (branch.type === 'auth_required') {
-        // auth_required branch - test can't proceed without auth
-        assert.equal(branch.type, 'auth_required', 'expected auth_required or success branch');
-      } else {
-        // unknown shape — fail to surface unexpected contract mismatches
-        throw new Error('message_search returned unexpected branch shape');
+      if (!isObjectsShape(branch)) {
+        assert.fail(`expected success branch, got ${branch?.type}`);
       }
+      const items = branch.items;
+      assert.ok(Array.isArray(items), 'expected items array in successful response');
     });
 
     it('$search queries containing inner quotes do not error and return expected results', async () => {
@@ -538,7 +608,7 @@ describe('message_search', () => {
         // First do a search to find any message
         const initialSearch = await handler(
           {
-            query: 'from:me',
+            query: { from: testAccountEmail },
             pageSize: 1,
             fields: 'id,subject,from,body',
             shape: 'objects',
@@ -567,7 +637,7 @@ describe('message_search', () => {
         // Test search with fields: "id" only
         const searchMinimal = await handler(
           {
-            query: 'from:me',
+            query: { from: testAccountEmail },
             pageSize: 1,
             fields: 'id',
             shape: 'objects',
@@ -632,7 +702,7 @@ describe('message_search', () => {
     });
 
     it('verifies significant payload size reduction with fields: "id"', async () => {
-      const query = 'from:me';
+      const query = { from: testAccountEmail };
       const pageSize = 10;
 
       // Get response with full data
@@ -690,14 +760,44 @@ describe('message_search', () => {
     });
 
     it('handles Graph API $select optimization with fields: "id"', async () => {
-      // Test that fields: "id" can leverage Graph's $select for efficiency
-      // Note: Subjects with hyphens may cause Graph API syntax errors
-      try {
+      const result = await handler(
+        {
+          query: { subject: `test${runId}` },
+          pageSize: 10,
+          fields: 'id',
+          shape: 'objects',
+          contentType: 'text',
+          excludeThreadHistory: false,
+        } as Input,
+        createExtra()
+      );
+
+      const branch = result.structuredContent?.result as Output | undefined;
+      assert.ok(branch, 'branch should exist');
+      if (isObjectsShape(branch) && branch.items.length > 0) {
+        for (const item of branch.items) {
+          assert.ok(item.id, 'item should have id');
+          assert.equal(typeof item.id, 'string', 'messageId should be string');
+          if (typeof item.id === 'string') {
+            assert.ok(item.id.length > 10, 'Graph message ID should be reasonably long');
+            assert.ok(/^[A-Za-z0-9+/=_-]+$/.test(item.id), 'Graph message ID should have valid format');
+          }
+        }
+      }
+    });
+
+    it('validates Graph API response structure consistency', async () => {
+      const testCases = [
+        { fields: 'id,subject,from,body', description: 'full data mode' },
+        { fields: 'id', description: 'ID-only mode' },
+      ];
+
+      for (const testCase of testCases) {
         const result = await handler(
           {
-            query: { subject: `test${runId}` }, // Remove hyphen to avoid Graph API syntax error
-            pageSize: 10,
-            fields: 'id',
+            query: { subject: `test${runId}` },
+            pageSize: 5,
+            fields: testCase.fields,
             shape: 'objects',
             contentType: 'text',
             excludeThreadHistory: false,
@@ -705,65 +805,12 @@ describe('message_search', () => {
           createExtra()
         );
 
-        const branch = result.structuredContent?.result as Output | undefined;
-        if (isObjectsShape(branch) && branch.items.length > 0) {
-          // Verify items are valid Graph message IDs
-          for (const item of branch.items) {
-            assert.ok(item.id, 'item should have id');
-            assert.equal(typeof item.id, 'string', 'messageId should be string');
-            if (typeof item.id === 'string') {
-              assert.ok(item.id.length > 10, 'Graph message ID should be reasonably long');
-              // Graph IDs typically contain alphanumeric characters and some symbols
-              assert.ok(/^[A-Za-z0-9+/=_-]+$/.test(item.id), 'Graph message ID should have valid format');
-            }
-          }
-        }
-      } catch (err) {
-        // Graph API may throw syntax errors for certain query patterns
-        assert.ok(err instanceof Error, 'Error should be an Error instance');
-        assert.ok(err.message.includes('Error searching messages') || err.message.includes('Syntax error'), 'Error should indicate search failure');
-      }
-    });
+        assert.ok(result.structuredContent, `${testCase.description}: should have structuredContent`);
+        const branch: Output | undefined = result.structuredContent?.result as Output;
+        assert.ok(branch, `${testCase.description}: branch should exist`);
 
-    it('validates Graph API response structure consistency', async () => {
-      // Test that both field selection modes work with Graph's OData responses
-      const testCases = [
-        { fields: 'id,subject,from,body', description: 'full data mode' },
-        { fields: 'id', description: 'ID-only mode' },
-      ];
-
-      for (const testCase of testCases) {
-        try {
-          const result = await handler(
-            {
-              query: { subject: `test${runId}` }, // Remove hyphen to avoid Graph API syntax error
-              pageSize: 5,
-              fields: testCase.fields,
-              shape: 'objects',
-              contentType: 'text',
-              excludeThreadHistory: false,
-            } as Input,
-            createExtra()
-          );
-
-          // Verify structured response format
-          assert.ok(result.structuredContent, `${testCase.description}: should have structuredContent`);
-
-          const branch: Output | undefined = result.structuredContent?.result as Output;
-          assert.ok(branch, `${testCase.description}: branch should exist`);
-
-          if (isObjectsShape(branch)) {
-            // Verify format field based on requested fields
-            if (testCase.fields === 'id') {
-              assert.ok(Array.isArray(branch.items), `${testCase.description}: should have items array`);
-            } else {
-              assert.ok(Array.isArray(branch.items), `${testCase.description}: should have items array`);
-            }
-          }
-        } catch (err) {
-          // Graph API may throw syntax errors for certain query patterns
-          assert.ok(err instanceof Error, 'Error should be an Error instance');
-          assert.ok(err.message.includes('Error searching messages') || err.message.includes('Syntax error'), `${testCase.description}: Error should indicate search failure`);
+        if (isObjectsShape(branch)) {
+          assert.ok(Array.isArray(branch.items), `${testCase.description}: should have items array`);
         }
       }
     });
@@ -1142,24 +1189,21 @@ describe('message_search', () => {
       // Test with completely invalid query structure
       const invalidQuery = { invalidField: 'test' } as unknown;
 
-      const result = await handler(
-        {
-          query: invalidQuery,
-          pageSize: 5,
-          shape: 'objects',
-          contentType: 'text',
-          excludeThreadHistory: false,
-        } as Input,
-        createExtra()
-      );
-
-      // Should succeed with empty results or require auth
-      const branch: Output | undefined = result.structuredContent?.result as Output;
-      assert.ok(branch, 'should return structured result');
-      assert.ok(branch.type === 'success' || branch.type === 'auth_required', 'should be success or auth_required type');
-
-      if (isObjectsShape(branch)) {
-        assert.ok(Array.isArray(branch.items), 'success should have items array');
+      try {
+        await handler(
+          {
+            query: invalidQuery,
+            pageSize: 5,
+            shape: 'objects',
+            contentType: 'text',
+            excludeThreadHistory: false,
+          } as Input,
+          createExtra()
+        );
+        assert.fail('Expected invalid query to throw');
+      } catch (err) {
+        const message = err instanceof Error ? err.message : String(err);
+        assert.ok(message.includes('Invalid query JSON') || message.includes('Error searching messages'), 'error should indicate invalid query');
       }
     });
 
