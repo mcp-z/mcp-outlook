@@ -15,7 +15,7 @@ import { createWriteStream } from 'fs';
 import { unlink } from 'fs/promises';
 import { z } from 'zod';
 import { executeQuery as executeOutlookQuery } from '../../email/querying/execute-query.ts';
-import { OutlookQueryParameterSchema } from '../../schemas/outlook-query-schema.ts';
+import { OutlookQueryParameterSchema, parseOutlookQueryParameter } from '../../schemas/outlook-query-schema.ts';
 import type { StorageExtra } from '../../types.ts';
 
 const DEFAULT_PAGE_SIZE = 50;
@@ -71,13 +71,6 @@ async function handler({ query, maxItems, filename, contentType, excludeThreadHi
   const { storageContext } = extra;
   const { transport, resourceStoreUri, baseUrl } = storageContext;
 
-  logger.info('outlook.messages.export-csv called', {
-    query,
-    maxItems,
-    filename,
-    accountId: extra.authContext.accountId,
-  });
-
   // Reserve file location for streaming write (creates directory, generates ID, formats filename)
   const reservation = await reserveFile(filename, {
     resourceStoreUri,
@@ -87,6 +80,15 @@ async function handler({ query, maxItems, filename, contentType, excludeThreadHi
   logger.info('outlook.messages.export-csv starting streaming export', { path: fullPath, maxItems });
 
   try {
+    const parsedQuery = parseOutlookQueryParameter(query);
+
+    logger.info('outlook.messages.export-csv called', {
+      query: parsedQuery,
+      maxItems,
+      filename,
+      accountId: extra.authContext.accountId,
+    });
+
     const graph = Client.initWithMiddleware({ authProvider: extra.authContext.auth });
 
     // Create CSV headers (all email fields)
@@ -125,7 +127,7 @@ async function handler({ query, maxItems, filename, contentType, excludeThreadHi
         metadata?: { nextPageToken?: string };
       } = await executeOutlookQuery(
         graph,
-        query,
+        parsedQuery,
         {
           logger,
           pageSize,

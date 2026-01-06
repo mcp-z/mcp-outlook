@@ -9,6 +9,7 @@ export interface ExecuteQueryOptions {
   readonly limit?: number;
   readonly includeBody?: boolean;
   readonly maxPages?: number | null;
+  readonly maxItemsScanned?: number | null;
   readonly pageSize?: number;
   readonly pageToken?: string;
   readonly timezone?: string;
@@ -21,7 +22,7 @@ export interface ExecuteQueryOptions {
  * Microsoft Graph errors are returned directly to the caller for actionable feedback.
  */
 export async function executeQuery<T>(graph: Client, query: QueryNode | undefined, options: ExecuteQueryOptions, transform: (item: unknown) => T): Promise<ExecutionResult<T>> {
-  const { logger, limit, includeBody, maxPages, pageSize, pageToken } = options;
+  const { logger, limit, includeBody, maxPages, maxItemsScanned, pageSize, pageToken } = options;
 
   // Single execution - direct query to Microsoft Graph API
   logger.info('executeQuery: executing direct Outlook query');
@@ -32,6 +33,7 @@ export async function executeQuery<T>(graph: Client, query: QueryNode | undefine
       limit: limit ?? 50,
       includeBody: includeBody ?? false,
       maxPages: maxPages ?? null,
+      maxItemsScanned: maxItemsScanned ?? null,
       pageSize: pageSize ?? 50,
       pageToken: pageToken ?? undefined,
       logger,

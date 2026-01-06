@@ -27,7 +27,7 @@ type FieldQuery = {
  * Outlook category mappings - case insensitive input to exact system categories
  * Note: These are user-defined categories in Outlook, not system categories like Gmail
  */
-const OUTLOOK_CATEGORIES = {
+export const OUTLOOK_CATEGORIES = {
   personal: 'Personal',
   work: 'Work',
   family: 'Family',
@@ -40,7 +40,7 @@ const OUTLOOK_CATEGORIES = {
  * Validate and map category name to Outlook system category
  * Throws error for invalid categories (fail fast principle)
  */
-function mapOutlookCategory(category: string): string {
+export function mapOutlookCategory(category: string): string {
   // Input validation - fail fast on invalid input
   if (!category || typeof category !== 'string') {
     throw new Error(`Invalid category: expected non-empty string, got ${typeof category}`);
@@ -66,13 +66,29 @@ export interface ODataFilterResult {
   search: string | null;
   filter: string | null;
   requireBodyClientFilter: boolean;
+  hasFullText: boolean;
 }
 
 export function toGraphFilter(query: QueryNode): ODataFilterResult {
   if (query.kqlQuery) {
-    return { search: query.kqlQuery, filter: null, requireBodyClientFilter: false };
+    return {
+      search: query.kqlQuery,
+      filter: null,
+      requireBodyClientFilter: false,
+      hasFullText: true,
+    };
   }
-  let requireBodyClientFilter = false;
+
+  if (hasFullTextIntent(query)) {
+    const searchCollect = collectSearchTerms(query);
+    const search = searchCollect.terms.length ? searchCollect.terms.join(' AND ') : null;
+    return {
+      search,
+      filter: null,
+      requireBodyClientFilter: searchCollect.usesBody || searchCollect.usesText,
+      hasFullText: true,
+    };
+  }
 
   function L(s: string) {
     // Microsoft Graph does NOT support toLower() function in OData filters
@@ -100,7 +116,6 @@ export function toGraphFilter(query: QueryNode): ODataFilterResult {
       if (rawStr.trim() === '') {
         throw new Error(`Invalid ${field} value: empty string`);
       }
-      requireBodyClientFilter = true;
       return '';
     }
 
@@ -237,72 +252,103 @@ export function toGraphFilter(query: QueryNode): ODataFilterResult {
   }
 
   const filterStr = emit(query);
+  const cleanedFilter = filterStr && typeof filterStr === 'string' && filterStr.trim().length ? filterStr.trim() : null;
+  return {
+    search: null,
+    filter: cleanedFilter,
+    requireBodyClientFilter: false,
+    hasFullText: false,
+  };
+}
 
-  const terms: string[] = [];
-  function pushTerms(arr?: string[]) {
-    if (Array.isArray(arr)) for (const t of arr) if ((t ?? '').toString().trim()) terms.push(String(t).trim());
-  }
+function collectSearchTerms(query: QueryNode): { terms: string[]; usesText: boolean; usesBody: boolean; usesExact: boolean } {
+  const state = {
+    terms: [] as string[],
+    usesText: false,
+    usesBody: false,
+    usesExact: false,
+  };
 
-  function walk(node: QueryNode): void {
+  walkNode(query);
+  return state;
+
+  function walkNode(node: QueryNode | undefined) {
     if (!node || typeof node !== 'object') return;
-    if ('$and' in node && node.$and) {
-      node.$and.forEach(walk);
+
+    if (node.$and) {
+      node.$and.forEach((child) => walkNode(child));
       return;
     }
-    if ('$or' in node && node.$or) {
-      node.$or.forEach(walk);
+    if (node.$or) {
+      node.$or.forEach((child) => walkNode(child));
       return;
     }
-    if ('$not' in node && node.$not) {
-      walk(node.$not);
+    if (node.$not) {
+      walkNode(node.$not);
       return;
     }
 
     if ('exactPhrase' in node && node.exactPhrase) {
-      // KQL uses double quotes for exact phrase matching
-      pushTerms([`"${String(node.exactPhrase).replace(/"/g, '\\"')}"`]);
+      state.usesExact = true;
+      pushExactPhrase(node.exactPhrase);
+    }
+
+    pushOperatorTerms(node.subject);
+
+    if ('text' in node && node.text) {
+      state.usesText = true;
+      pushOperatorTerms(node.text);
+    }
+    if ('body' in node && node.body) {
+      state.usesBody = true;
+      pushOperatorTerms(node.body);
+    }
+
+    // Other fields (hasAttachment, importance, date) are handled via OData filters (emit())
+    // and should not create search terms with colon prefixes that break Graph $search.
+  }
+
+  function pushExactPhrase(value: string) {
+    const phrase = String(value);
+    if (!phrase.trim()) return;
+    pushAnyTerms([`"${phrase}"`]);
+  }
+
+  function pushOperatorTerms(value: FieldOperator | string | undefined) {
+    if (!value) return;
+    if (typeof value === 'string') {
+      const clause = buildClause(null, value);
+      if (clause) state.terms.push(clause);
       return;
     }
 
-    if ('subject' in node && node.subject) {
-      if (typeof node.subject === 'string') {
-        pushTerms([node.subject]);
-      } else {
-        pushTerms(node.subject.$any);
-        pushTerms(node.subject.$all);
-        pushTerms(node.subject.$none);
+    if (Array.isArray(value.$any) && value.$any.length > 0) {
+      pushAnyTerms(value.$any);
+    }
+    if (Array.isArray(value.$all) && value.$all.length > 0) {
+      for (const term of value.$all) {
+        const clause = buildClause(null, String(term ?? ''));
+        if (clause) state.terms.push(clause);
       }
     }
-    if ('body' in node && node.body) {
-      if (typeof node.body === 'string') {
-        pushTerms([node.body]);
-      } else {
-        pushTerms(node.body.$any);
-        pushTerms(node.body.$all);
-        pushTerms(node.body.$none);
-      }
-    }
-    if ('text' in node && node.text) {
-      if (typeof node.text === 'string') {
-        pushTerms([node.text]);
-      } else {
-        pushTerms(node.text.$any);
-        pushTerms(node.text.$all);
-        pushTerms(node.text.$none);
+    if (Array.isArray(value.$none) && value.$none.length > 0) {
+      const clauses = value.$none.map((term) => buildClause(null, String(term ?? ''))).filter(Boolean);
+      if (clauses.length === 1) {
+        state.terms.push(`NOT ${clauses[0]}`);
+      } else if (clauses.length > 1) {
+        state.terms.push(`NOT (${clauses.join(' OR ')})`);
       }
     }
   }
-  walk(query);
 
-  /**
-   * Escape KQL (Keyword Query Language) special characters in search terms.
-   * KQL special characters that need escaping: \ : ( ) { } [ ] " * ? < > - _
-   * According to Microsoft Graph KQL syntax, these must be escaped with backslash.
-   */
-  function escapeKQL(term: string): string {
-    if (!term) return term;
-    // Escape backslash first, then other special characters
-    return term
+  function pushAnyTerms(values: string[]) {
+    const clauses = values.map((val) => buildClause(null, val)).filter(Boolean);
+    if (!clauses.length) return;
+    state.terms.push(clauses.length === 1 ? clauses[0] : `(${clauses.join(' OR ')})`);
+  }
+
+  function escapeKQL(value: string): string {
+    return value
       .replace(/\\/g, '\\\\')
       .replace(/:/g, '\\:')
       .replace(/\(/g, '\\(')
@@ -316,17 +362,38 @@ export function toGraphFilter(query: QueryNode): ODataFilterResult {
       .replace(/\?/g, '\\?')
       .replace(/</g, '\\<')
       .replace(/>/g, '\\>')
-      .replace(/-/g, '\\-')
       .replace(/_/g, '\\_');
   }
 
-  const mapped = terms.map((t) => {
-    const escaped = escapeKQL(String(t));
-    return escaped;
-  });
-  const search = mapped.length ? mapped.join(' OR ') : null;
+  function buildClause(_prefix: string | null, value: string): string {
+    const trimmed = value.trim();
+    if (!trimmed) return '';
+    const escaped = escapeKQL(trimmed);
+    const shouldQuote = /[^a-zA-Z\s]/.test(trimmed) || /\s/.test(trimmed);
+    return shouldQuote ? `"${escaped}"` : escaped;
+  }
+}
 
-  return { search, filter: filterStr && typeof filterStr === 'string' && filterStr.length ? filterStr : null, requireBodyClientFilter };
+function hasFullTextIntent(node: QueryNode | undefined | null): boolean {
+  if (!node || typeof node !== 'object') return false;
+
+  if (node.kqlQuery) return true;
+  if (node.exactPhrase) return true;
+  if ('subject' in node && node.subject) return true;
+  if ('text' in node && node.text) return true;
+  if ('body' in node && node.body) return true;
+
+  if ('$and' in node && node.$and) {
+    return node.$and.some((child) => hasFullTextIntent(child));
+  }
+  if ('$or' in node && node.$or) {
+    return node.$or.some((child) => hasFullTextIntent(child));
+  }
+  if ('$not' in node && node.$not) {
+    return hasFullTextIntent(node.$not);
+  }
+
+  return false;
 }
 
 export function toOutlookFilter(parsed: QueryNode, _options?: { includeBodyContent?: boolean; useCaseInsensitiveWrap?: boolean }) {

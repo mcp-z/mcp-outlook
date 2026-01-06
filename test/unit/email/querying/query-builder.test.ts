@@ -36,10 +36,12 @@ describe('toGraphFilter - basic field queries', () => {
     assert.ok(result.filter?.includes('dave@example.com'));
   });
 
-  it('handles subject field (startswith limitation)', () => {
+  it('handles subject field (search mode)', () => {
     const result = toGraphFilter({ subject: 'meeting' });
-    assert.ok(result.filter?.includes('startswith(subject'));
-    assert.ok(result.filter?.includes('meeting'));
+    assert.strictEqual(result.filter, null);
+    assert.ok(result.search?.includes('meeting'));
+    assert.strictEqual(result.hasFullText, true);
+    assert.strictEqual(result.requireBodyClientFilter, false);
   });
 
   it('handles body field (client-side filter flag)', () => {
@@ -77,10 +79,14 @@ describe('toGraphFilter - field operators', () => {
     assert.ok(result.filter?.includes('and'));
   });
 
-  it('handles $none operator (NOT logic) for subject', () => {
+  it('handles $none operator (NOT logic) for subject in search mode', () => {
     const result = toGraphFilter({ subject: { $none: ['spam', 'ads'] } });
-    assert.ok(result.filter?.includes('not'));
-    assert.ok(result.filter?.includes('startswith(subject'));
+    assert.strictEqual(result.filter, null);
+    assert.strictEqual(result.hasFullText, true);
+    assert.ok(result.search?.includes('NOT'));
+    assert.ok(result.search?.includes('spam'));
+    assert.ok(result.search?.includes('ads'));
+    assert.strictEqual(result.requireBodyClientFilter, false);
   });
 
   it('handles multiple field operators in same query', () => {
@@ -166,8 +172,8 @@ describe('toGraphFilter - exact phrase matching', () => {
     });
     assert.ok(result.search?.includes('quarterly report'));
     assert.ok(result.search?.includes('\\"'));
-    assert.ok(result.filter?.includes('from/emailAddress'));
-    assert.ok(result.filter?.includes('alice@example.com'));
+    assert.strictEqual(result.filter, null);
+    assert.strictEqual(result.hasFullText, true);
   });
 });
 
@@ -226,12 +232,10 @@ describe('toGraphFilter - logical operators', () => {
     const result = toGraphFilter({
       $and: [{ from: 'alice@example.com' }, { subject: 'meeting' }, { hasAttachment: true }],
     });
-    assert.ok(result.filter?.includes('from/emailAddress'));
-    assert.ok(result.filter?.includes('alice@example.com'));
-    assert.ok(result.filter?.includes('startswith(subject'));
-    assert.ok(result.filter?.includes('meeting'));
-    assert.ok(result.filter?.includes('hasAttachments eq true'));
-    assert.ok(result.filter?.includes('and'));
+    assert.strictEqual(result.filter, null);
+    assert.ok(result.search?.includes('meeting'));
+    assert.strictEqual(result.hasFullText, true);
+    assert.strictEqual(result.requireBodyClientFilter, false);
   });
 
   it('handles $or operator with multiple conditions', () => {
@@ -247,8 +251,9 @@ describe('toGraphFilter - logical operators', () => {
     const result = toGraphFilter({
       $not: { subject: 'spam' },
     });
-    assert.ok(result.filter?.includes('not'));
-    assert.ok(result.filter?.includes('startswith(subject'));
+    assert.strictEqual(result.filter, null);
+    assert.ok(result.search?.includes('spam'));
+    assert.strictEqual(result.hasFullText, true);
   });
 
   it('handles nested logical operators', () => {
@@ -260,12 +265,10 @@ describe('toGraphFilter - logical operators', () => {
         },
       ],
     });
-    assert.ok(result.filter?.includes('from/emailAddress'));
-    assert.ok(result.filter?.includes('alice@example.com'));
-    assert.ok(result.filter?.includes('meeting'));
-    assert.ok(result.filter?.includes('conference'));
-    assert.ok(result.filter?.includes('or'));
-    assert.ok(result.filter?.includes('and'));
+    assert.strictEqual(result.filter, null);
+    assert.ok(result.search?.includes('meeting'));
+    assert.ok(result.search?.includes('conference'));
+    assert.strictEqual(result.hasFullText, true);
   });
 
   it('handles complex nested query combinations', () => {
@@ -280,12 +283,10 @@ describe('toGraphFilter - logical operators', () => {
         },
       ],
     });
-    assert.ok(result.filter?.includes('from/emailAddress'));
-    assert.ok(result.filter?.includes('alice@example.com'));
-    assert.ok(result.filter?.includes('meeting'));
-    assert.ok(result.filter?.includes('conference'));
-    assert.ok(result.filter?.includes('not'));
-    assert.ok(result.filter?.includes('Personal'));
+    assert.strictEqual(result.filter, null);
+    assert.ok(result.search?.includes('meeting'));
+    assert.ok(result.search?.includes('conference'));
+    assert.strictEqual(result.hasFullText, true);
   });
 });
 
@@ -310,10 +311,9 @@ describe('toGraphFilter - OData filter string generation', () => {
         { $not: { subject: 'spam' } },
       ],
     });
-    assert.ok(result.filter?.includes(' eq '));
-    assert.ok(result.filter?.includes(' and '));
-    assert.ok(result.filter?.includes(' or '));
-    assert.ok(result.filter?.includes('not '));
+    assert.strictEqual(result.filter, null);
+    assert.ok(result.search?.includes('spam'));
+    assert.strictEqual(result.hasFullText, true);
   });
 
   it('escapes single quotes in values (doubled)', () => {
@@ -336,24 +336,23 @@ describe('toGraphFilter - OData filter string generation', () => {
   });
 });
 
-describe('toGraphFilter - KQL search parameter', () => {
-  it('generates search parameter for subject/body/text', () => {
-    const result = toGraphFilter({ subject: 'meeting' });
+describe('toGraphFilter - search parameter (text/body/exact)', () => {
+  it('generates search parameter for text field', () => {
+    const result = toGraphFilter({ text: 'meeting' });
     assert.ok(result.search?.includes('meeting'));
   });
 
   it('escapes KQL special characters', () => {
-    const result = toGraphFilter({ subject: 'test:value(with)special-chars_here' });
-    // KQL special characters should be escaped
+    const result = toGraphFilter({ text: 'test:value(with)special-chars_here' });
+    // KQL special characters should be escaped (except hyphen which is left literal for Graph)
     assert.ok(result.search?.includes('\\:'));
     assert.ok(result.search?.includes('\\('));
     assert.ok(result.search?.includes('\\)'));
-    assert.ok(result.search?.includes('\\-'));
     assert.ok(result.search?.includes('\\_'));
   });
 
   it('combines multiple search terms with OR', () => {
-    const result = toGraphFilter({ subject: { $any: ['meeting', 'conference', 'event'] } });
+    const result = toGraphFilter({ text: { $any: ['meeting', 'conference', 'event'] } });
     assert.ok(result.search?.includes('meeting'));
     assert.ok(result.search?.includes('conference'));
     assert.ok(result.search?.includes('event'));
@@ -418,22 +417,21 @@ describe('toGraphFilter - edge cases', () => {
 
   it('combines all query types in one complex query', () => {
     const result = toGraphFilter({
-      $and: [{ from: { $any: ['alice@example.com', 'bob@example.com'] } }, { subject: 'meeting' }, { categories: 'work' }, { hasAttachment: true }, { date: { $gte: '2025-01-15' } }],
+      $and: [{ from: { $any: ['alice@example.com', 'bob@example.com'] } }, { subject: 'meeting' }, { categories: 'work' }, { hasAttachment: true }, { date: { $gte: '2025-01-15' } }, { text: 'meeting' }],
     });
-    assert.ok(result.filter?.includes('alice@example.com'));
-    assert.ok(result.filter?.includes('bob@example.com'));
-    assert.ok(result.filter?.includes('Work'));
-    assert.ok(result.filter?.includes('hasAttachments eq true'));
-    assert.ok(result.filter?.includes('receivedDateTime ge'));
+    assert.strictEqual(result.filter, null);
     assert.ok(result.search?.includes('meeting'));
+    assert.strictEqual(result.hasFullText, true);
+    assert.strictEqual(result.requireBodyClientFilter, true);
   });
 });
 
 describe('toGraphFilter - OData limitations', () => {
   it('subject uses startswith (not contains)', () => {
     const result = toGraphFilter({ subject: 'meeting' });
-    assert.ok(result.filter?.includes('startswith(subject'));
-    assert.ok(!result.filter?.includes('contains('));
+    assert.strictEqual(result.filter, null);
+    assert.ok(result.search?.includes('meeting'));
+    assert.strictEqual(result.hasFullText, true);
   });
 
   it('body/text skip server-side filter (client-side)', () => {
@@ -507,15 +505,14 @@ describe('toGraphFilter - label queries', () => {
 
   it('toGraphFilter combines label queries with other fields', () => {
     const parsed = {
-      $and: [{ label: 'Work' }, { from: 'alice@example.com' }, { subject: 'meeting' }],
+      $and: [{ label: 'Work' }, { from: 'alice@example.com' }, { subject: 'meeting' }, { text: 'meeting' }],
     };
     const result = toGraphFilter(parsed);
 
-    assert.ok(result.filter?.includes('categories/any(c: c eq'), 'expected label OData filter');
-    assert.ok(result.filter?.includes('Work'), 'expected Work label');
-    assert.ok(result.filter?.includes('from/emailAddress'), 'expected from query');
-    assert.ok(result.filter?.includes('alice@example.com'), 'expected alice email');
+    assert.strictEqual(result.filter, null);
     assert.ok(result.search?.includes('meeting'), 'expected meeting in search');
+    assert.strictEqual(result.hasFullText, true);
+    assert.strictEqual(result.requireBodyClientFilter, true);
   });
 
   it('toGraphFilter handles label queries with special characters and escaping', () => {
@@ -536,14 +533,15 @@ describe('toGraphFilter - label queries', () => {
 
   it("toGraphFilter label queries don't interfere with search parameter", () => {
     const parsed = {
-      $and: [{ label: 'Work' }, { subject: 'meeting' }],
+      $and: [{ label: 'Work' }, { subject: 'meeting' }, { text: 'meeting' }],
     };
     const result = toGraphFilter(parsed);
 
-    assert.ok(result.filter?.includes('categories/any(c: c eq'), 'expected label in filter');
-    assert.ok(result.filter?.includes('Work'), 'expected Work label');
+    assert.strictEqual(result.filter, null);
     assert.ok(result.search?.includes('meeting'), 'expected meeting in search parameter');
     assert.ok(!result.search?.includes('Work'), 'Work should not be in search parameter');
+    assert.strictEqual(result.hasFullText, true);
+    assert.strictEqual(result.requireBodyClientFilter, true);
   });
 });
 
@@ -559,11 +557,12 @@ describe('toGraphFilter - real-world query examples', () => {
 
   it('finds emails in work category with subject keyword', () => {
     const result = toGraphFilter({
-      $and: [{ categories: 'work' }, { subject: 'invoice' }],
+      $and: [{ categories: 'work' }, { subject: 'invoice' }, { text: 'invoice' }],
     });
-    assert.ok(result.filter?.includes('categories/any(c: c eq'));
-    assert.ok(result.filter?.includes('Work'));
+    assert.strictEqual(result.filter, null);
     assert.ok(result.search?.includes('invoice'));
+    assert.strictEqual(result.hasFullText, true);
+    assert.strictEqual(result.requireBodyClientFilter, true);
   });
 
   it('finds emails in date range from multiple senders', () => {
@@ -589,13 +588,10 @@ describe('toGraphFilter - real-world query examples', () => {
         },
       ],
     });
-    assert.ok(result.filter?.includes('alice@example.com'));
+    assert.strictEqual(result.filter, null);
     assert.ok(result.search?.includes('meeting'));
-    assert.ok(result.filter?.includes('Work'));
-    assert.ok(result.filter?.includes('hasAttachments eq true'));
-    assert.ok(result.filter?.includes('receivedDateTime ge'));
-    assert.ok(result.filter?.includes('not'));
-    assert.ok(result.filter?.includes('archived'));
+    assert.strictEqual(result.hasFullText, true);
+    assert.strictEqual(result.requireBodyClientFilter, false);
   });
 
   it('searches by exact phrase with filters', () => {
@@ -605,19 +601,18 @@ describe('toGraphFilter - real-world query examples', () => {
     // KQL escapes quotes
     assert.ok(result.search?.includes('quarterly report'));
     assert.ok(result.search?.includes('\\"'));
-    assert.ok(result.filter?.includes('from/emailAddress'));
-    assert.ok(result.filter?.includes('finance@example.com'));
-    assert.ok(result.filter?.includes('hasAttachments eq true'));
+    assert.strictEqual(result.filter, null);
+    assert.strictEqual(result.hasFullText, true);
+    assert.strictEqual(result.requireBodyClientFilter, false);
   });
 });
 
 describe('toOutlookFilter - integration', () => {
   it('combines OData filter + KQL search + filters', () => {
     const result = toOutlookFilter({
-      $and: [{ from: 'alice@example.com' }, { subject: 'meeting' }],
+      $and: [{ from: 'alice@example.com' }, { subject: 'meeting' }, { text: 'meeting' }],
     });
-    assert.ok(result.filter?.includes('from/emailAddress'));
-    assert.ok(result.filter?.includes('alice@example.com'));
+    assert.strictEqual(result.filter, null);
     assert.ok(result.search?.includes('meeting'));
     assert.ok(Array.isArray(result.filters.fromIncludes));
     assert.ok(result.filters.fromIncludes.includes('alice@example.com'));
@@ -645,8 +640,7 @@ describe('toOutlookFilter - integration', () => {
       $and: [{ from: 'alice@example.com' }, { body: 'report' }, { hasAttachment: true }],
     });
     // OData filter
-    assert.ok(result.filter?.includes('from/emailAddress'));
-    assert.ok(result.filter?.includes('hasAttachments eq true'));
+    assert.strictEqual(result.filter, null);
     // KQL search
     assert.ok(result.search?.includes('report'));
     // Client filter flag
