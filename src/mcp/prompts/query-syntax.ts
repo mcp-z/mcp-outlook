@@ -28,7 +28,10 @@ export default function createPrompt() {
 - \`subject\`: Search subject line
 - \`body\`: Search message body
 - \`text\`: Search all text content
-- \`exactPhrase\`: Strict exact phrase matching (KQL)
+- \`exactPhrase\`: Strict exact phrase matching (KQL); wrap the phrase in quotes to keep the words together.
+
+## Search Semantics
+- Including fields such as subject, text, body, exactPhrase, or kqlQuery runs a Microsoft Graph $search. The structured filters (from, to, cc, bcc, categories, label, hasAttachment, etc.) are then applied client-side after the matching messages arrive, so those rules run once the search hits are returned.
 
 ## Boolean Flags
 - \`hasAttachment\`: true/false

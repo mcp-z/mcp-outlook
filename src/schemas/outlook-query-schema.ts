@@ -78,33 +78,54 @@ export const OutlookQuerySchema = z.lazy(() =>
     .strict()
 ) as unknown as z.ZodType<OutlookQuery>;
 
-export const OutlookQueryParameterSchema = z.any().transform((value, ctx) => {
-  let parsed = value;
-  if (typeof value === 'string') {
+const OutlookQueryStringSchema = z
+  .string()
+  .min(1)
+  .transform((value, ctx) => {
     try {
-      parsed = JSON.parse(value);
+      return parseOutlookQueryString(value);
     } catch (error) {
-      const message = error instanceof Error ? error.message : 'Invalid JSON';
+      const message = error instanceof Error ? error.message : 'Invalid query input';
       ctx.addIssue({
         code: z.ZodIssueCode.custom,
-        message: `Query must be valid JSON. ${message}. Wrap KQL syntax in {"kqlQuery":"<query>"} if needed.`,
+        message,
       });
       return z.NEVER;
     }
-  }
+  });
 
-  const validated = OutlookQuerySchema.safeParse(parsed);
-  if (!validated.success) {
-    ctx.addIssue({
-      code: z.ZodIssueCode.custom,
-      message: `Invalid query JSON: ${validated.error.message}. Use {"kqlQuery":"<query>"} for KQL syntax.`,
-    });
-    return z.NEVER;
-  }
-
-  return validated.data;
-}) as z.ZodType<OutlookQuery>;
+export const OutlookQueryParameterSchema = z.union([OutlookQuerySchema, OutlookQueryStringSchema]) as z.ZodType<OutlookQuery | string>;
 export type OutlookQueryParameter = z.infer<typeof OutlookQueryParameterSchema>;
+
+export function parseOutlookQueryParameter(input: OutlookQuery | string | undefined): OutlookQuery | undefined {
+  if (input === undefined) return undefined;
+  if (typeof input === 'string') {
+    return parseOutlookQueryString(input);
+  }
+  const validated = OutlookQuerySchema.safeParse(input);
+  if (!validated.success) {
+    throw new Error(`Invalid query JSON: ${validated.error.message}. Use {"kqlQuery":"<query>"} for KQL syntax.`);
+  }
+  return validated.data;
+}
+
+function parseOutlookQueryString(value: string): OutlookQuery {
+  const raw = safeJsonParse(value, 'kqlQuery');
+  const validated = OutlookQuerySchema.safeParse(raw);
+  if (!validated.success) {
+    throw new Error(`Invalid query JSON: ${validated.error.message}. Use {"kqlQuery":"<query>"} for KQL syntax.`);
+  }
+  return validated.data;
+}
+
+function safeJsonParse(value: string, rawField: 'kqlQuery'): unknown {
+  try {
+    return JSON.parse(value);
+  } catch (error) {
+    const message = error instanceof Error ? error.message : 'Invalid JSON';
+    throw new Error(`Query must be valid JSON. ${message}. Wrap KQL syntax in {"${rawField}":"<query>"} if needed.`);
+  }
+}
 
 export type OutlookQuery = BaseEmailQueryFields & {
   $and?: OutlookQuery[];

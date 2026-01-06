@@ -9,8 +9,9 @@ import { Client } from '@microsoft/microsoft-graph-client';
 import type * as MicrosoftGraph from '@microsoft/microsoft-graph-types';
 import { type CallToolResult, ErrorCode, McpError } from '@modelcontextprotocol/sdk/types.js';
 import { z } from 'zod';
+import { needsBody } from '../../email/querying/client-filter.ts';
 import { executeQuery as executeOutlookQuery } from '../../email/querying/execute-query.ts';
-import { OutlookQueryParameterSchema } from '../../schemas/outlook-query-schema.ts';
+import { OutlookQueryParameterSchema, parseOutlookQueryParameter } from '../../schemas/outlook-query-schema.ts';
 
 const inputSchema = z.object({
   query: OutlookQueryParameterSchema.optional().describe('Structured query object or JSON string for filtering messages. Use query-syntax prompt for reference and kqlQuery for KQL syntax.'),
@@ -64,25 +65,27 @@ export type Output = z.infer<typeof outputSchema>;
 async function handler({ query, pageSize = 50, pageToken, fields, shape = 'arrays', contentType, excludeThreadHistory }: Input, extra: EnrichedExtra): Promise<CallToolResult> {
   const logger = extra.logger;
 
-  const requestedFields = parseFields(fields, EMAIL_FIELDS);
-  const includeBody = requestedFields === 'all' || requestedFields.has('body');
-
-  logger.info('outlook.search called with', {
-    query,
-    pageSize,
-    pageToken: pageToken ? '[provided]' : undefined,
-    fields: fields || 'all',
-    includeBody,
-  });
-
   try {
+    const parsedQuery = parseOutlookQueryParameter(query);
+    const requestedFields = parseFields(fields, EMAIL_FIELDS);
+    const needsBodyContent = needsBody(parsedQuery);
+    const includeBody = requestedFields === 'all' || requestedFields.has('body') || needsBodyContent;
+
+    logger.info('outlook.search called with', {
+      query: parsedQuery,
+      pageSize,
+      pageToken: pageToken ? '[provided]' : undefined,
+      fields: fields || 'all',
+      includeBody,
+    });
+
     const graph = Client.initWithMiddleware({
       authProvider: extra.authContext.auth,
     });
     const started = Date.now();
     const exec = await executeOutlookQuery(
       graph,
-      query,
+      parsedQuery,
       {
         logger,
         pageSize,
