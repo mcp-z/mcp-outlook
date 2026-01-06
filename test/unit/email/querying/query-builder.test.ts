@@ -171,6 +171,16 @@ describe('toGraphFilter - exact phrase matching', () => {
   });
 });
 
+describe('toGraphFilter - raw KQL passthrough', () => {
+  it('uses kqlQuery as search and skips filters', () => {
+    const rawKql = 'from:"alice@example.com" AND subject:report';
+    const result = toGraphFilter({ kqlQuery: rawKql });
+    assert.strictEqual(result.search, rawKql);
+    assert.strictEqual(result.filter, null);
+    assert.strictEqual(result.requireBodyClientFilter, false);
+  });
+});
+
 describe('toGraphFilter - attachment flag', () => {
   it('handles hasAttachment = true', () => {
     const result = toGraphFilter({ hasAttachment: true });

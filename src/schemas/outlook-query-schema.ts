@@ -78,6 +78,34 @@ export const OutlookQuerySchema = z.lazy(() =>
     .strict()
 ) as unknown as z.ZodType<OutlookQuery>;
 
+export const OutlookQueryParameterSchema = z.any().transform((value, ctx) => {
+  let parsed = value;
+  if (typeof value === 'string') {
+    try {
+      parsed = JSON.parse(value);
+    } catch (error) {
+      const message = error instanceof Error ? error.message : 'Invalid JSON';
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: `Query must be valid JSON. ${message}. Wrap KQL syntax in {"kqlQuery":"<query>"} if needed.`,
+      });
+      return z.NEVER;
+    }
+  }
+
+  const validated = OutlookQuerySchema.safeParse(parsed);
+  if (!validated.success) {
+    ctx.addIssue({
+      code: z.ZodIssueCode.custom,
+      message: `Invalid query JSON: ${validated.error.message}. Use {"kqlQuery":"<query>"} for KQL syntax.`,
+    });
+    return z.NEVER;
+  }
+
+  return validated.data;
+}) as z.ZodType<OutlookQuery>;
+export type OutlookQueryParameter = z.infer<typeof OutlookQueryParameterSchema>;
+
 export type OutlookQuery = BaseEmailQueryFields & {
   $and?: OutlookQuery[];
   $or?: OutlookQuery[];

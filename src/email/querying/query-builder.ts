@@ -69,6 +69,9 @@ export interface ODataFilterResult {
 }
 
 export function toGraphFilter(query: QueryNode): ODataFilterResult {
+  if (query.kqlQuery) {
+    return { search: query.kqlQuery, filter: null, requireBodyClientFilter: false };
+  }
   let requireBodyClientFilter = false;
 
   function L(s: string) {
