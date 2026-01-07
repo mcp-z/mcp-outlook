@@ -4,7 +4,7 @@ import type { OutlookQuery as QueryNode } from '../../schemas/outlook-query-sche
 import type { Logger } from '../../types.ts';
 import { buildClientPredicate } from './client-filter.ts';
 import { decodeNextPageToken, encodeNextPageToken, FIRST_PAGE_SKIP_TOKEN } from './pagination-token.ts';
-import { toGraphFilter } from './query-builder.ts';
+import { buildQueryFilter, toGraphFilter } from './query-builder.ts';
 
 export interface OutlookSearchOptions {
   query?: QueryNode;
@@ -64,94 +64,80 @@ export async function searchMessages(graph: Client, opts: OutlookSearchOptions):
     };
   }
 
-  let currentSkipToken = pageState.skipToken;
-  let offset = pageState.offset;
-  const maxPagesCap = maxPages ?? null;
-  const maxItemsCap = maxItemsScanned ?? null;
-  const collected: Message[] = [];
-  let lastNextSkipToken: string | undefined;
-  let midPageToken: string | undefined;
-  let capHit = false;
-  let pagesFetched = 0;
-  let scannedItems = 0;
+  const searchResult = await collectClientFilteredPages({
+    graph,
+    search: graphPlan.search ?? undefined,
+    filter: undefined,
+    startSkipToken: pageState.skipToken,
+    startOffset: pageState.offset,
+    predicate,
+    includeBody: effectiveIncludeBody,
+    pageSize,
+    logger,
+    maxPages: maxPages ?? null,
+    maxItemsScanned: maxItemsScanned ?? null,
+    mode: 'search',
+  });
 
-  mainLoop: while (collected.length < pageSize) {
-    if (maxPagesCap !== null && pagesFetched >= maxPagesCap) {
-      capHit = true;
-      break;
-    }
-
-    const pageTokenUsed = currentSkipToken;
-    const graphPage = await fetchGraphPage(graph, {
-      search: graphPlan.search ?? undefined,
-      skipToken: pageTokenUsed,
-      includeBody: effectiveIncludeBody,
-      pageSize,
-      logger,
-    });
-
-    pagesFetched += 1;
-    lastNextSkipToken = graphPage.nextSkipToken;
-    const pageItems = graphPage.messages;
-    if (!pageItems.length) {
-      break;
-    }
-
-    const startIndex = offset;
-    const sliced = startIndex > 0 ? pageItems.slice(startIndex) : pageItems;
-    offset = 0;
-
-    for (let idx = 0; idx < sliced.length; idx += 1) {
-      const message = sliced[idx];
-      scannedItems += 1;
-      if (maxItemsCap !== null && scannedItems > maxItemsCap) {
-        capHit = true;
-        break mainLoop;
-      }
-      if (predicate && !predicate(message)) {
-        continue;
-      }
-      collected.push(message);
-      if (collected.length === pageSize) {
-        const nextOffset = startIndex + idx + 1;
-        midPageToken = encodeNextPageToken({
-          skipToken: pageTokenUsed,
-          offset: nextOffset,
-          mode: 'search',
-        });
-        break mainLoop;
-      }
-    }
-
-    currentSkipToken = graphPage.nextSkipToken;
-    if (!currentSkipToken) {
-      break;
-    }
+  if (query && 'text' in query && typeof query.text === 'object' && Array.isArray(query.text.$all)) {
+    console.log(
+      'SEARCH RESULT IDS',
+      searchResult.collected.map((msg) => msg.id)
+    );
   }
 
-  if (capHit) {
+  if (searchResult.capHit) {
+    return { messages: searchResult.collected };
+  }
+  if (searchResult.midPageToken) {
+    return { messages: searchResult.collected, nextPageToken: searchResult.midPageToken };
+  }
+  if (searchResult.nextSkipToken) {
     return {
-      messages: collected,
+      messages: searchResult.collected,
+      nextPageToken: encodeNextPageToken({ skipToken: searchResult.nextSkipToken, offset: 0, mode: 'search' }),
     };
   }
-
-  if (midPageToken) {
-    return {
-      messages: collected,
-      nextPageToken: midPageToken,
-    };
+  if (searchResult.collected.length > 0) {
+    return { messages: searchResult.collected };
   }
 
-  if (lastNextSkipToken) {
-    return {
-      messages: collected,
-      nextPageToken: encodeNextPageToken({ skipToken: lastNextSkipToken, offset: 0, mode: 'search' }),
-    };
+  if (predicate && query) {
+    const fallbackFilter = buildQueryFilter(query).trim();
+    if (fallbackFilter) {
+      const fallbackResult = await collectClientFilteredPages({
+        graph,
+        filter: fallbackFilter,
+        includeBody: effectiveIncludeBody,
+        pageSize,
+        predicate,
+        logger,
+        maxPages: maxPages ?? null,
+        maxItemsScanned: maxItemsScanned ?? null,
+        startSkipToken: undefined,
+        startOffset: 0,
+        mode: 'filter',
+      });
+
+      if (fallbackResult.capHit) {
+        return { messages: fallbackResult.collected };
+      }
+      if (fallbackResult.midPageToken) {
+        return { messages: fallbackResult.collected, nextPageToken: fallbackResult.midPageToken };
+      }
+      if (fallbackResult.nextSkipToken) {
+        return {
+          messages: fallbackResult.collected,
+          nextPageToken: encodeNextPageToken({ skipToken: fallbackResult.nextSkipToken, offset: 0, mode: 'filter' }),
+        };
+      }
+      if (fallbackResult.collected.length > 0) {
+        return { messages: fallbackResult.collected };
+      }
+    }
   }
 
-  return {
-    messages: collected,
-  };
+  return { messages: searchResult.collected };
 }
 
 interface GraphPageParams {
@@ -208,4 +194,100 @@ async function fetchGraphPage(graph: Client, params: GraphPageParams): Promise<{
   });
 
   return { messages, nextSkipToken };
+}
+
+interface CollectParams {
+  graph: Client;
+  search?: string;
+  filter?: string;
+  startSkipToken?: string;
+  startOffset?: number;
+  predicate: ((message: Message) => boolean) | null;
+  includeBody: boolean;
+  pageSize: number;
+  logger: Logger;
+  maxPages: number | null;
+  maxItemsScanned: number | null;
+  mode: 'search' | 'filter';
+}
+
+interface CollectResult {
+  collected: Message[];
+  midPageToken?: string;
+  nextSkipToken?: string;
+  capHit: boolean;
+}
+
+async function collectClientFilteredPages(params: CollectParams): Promise<CollectResult> {
+  const { graph, search, filter, startSkipToken, startOffset = 0, predicate, includeBody, pageSize, logger, maxPages, maxItemsScanned, mode } = params;
+  let currentSkipToken = startSkipToken;
+  let offset = startOffset;
+  const collected: Message[] = [];
+  let midPageToken: string | undefined;
+  let lastNextSkipToken: string | undefined;
+  let capHit = false;
+  let pagesFetched = 0;
+  let scannedItems = 0;
+
+  mainLoop: while (collected.length < pageSize) {
+    if (maxPages !== null && pagesFetched >= maxPages) {
+      capHit = true;
+      break;
+    }
+
+    const pageTokenUsed = currentSkipToken;
+    const graphPage = await fetchGraphPage(graph, {
+      search,
+      filter,
+      skipToken: currentSkipToken,
+      includeBody,
+      pageSize,
+      logger,
+    });
+
+    pagesFetched += 1;
+    lastNextSkipToken = graphPage.nextSkipToken;
+    const pageItems = graphPage.messages;
+    if (!pageItems.length) {
+      break;
+    }
+
+    const startIndex = offset;
+    const sliced = startIndex > 0 ? pageItems.slice(startIndex) : pageItems;
+    offset = 0;
+
+    for (let idx = 0; idx < sliced.length; idx += 1) {
+      const message = sliced[idx];
+      scannedItems += 1;
+      if (maxItemsScanned !== null && scannedItems > maxItemsScanned) {
+        capHit = true;
+        break mainLoop;
+      }
+      if (predicate && !predicate(message)) {
+        continue;
+      }
+      collected.push(message);
+      if (collected.length === pageSize) {
+        const nextOffset = startIndex + idx + 1;
+        midPageToken = encodeNextPageToken({
+          skipToken: pageTokenUsed,
+          offset: nextOffset,
+          mode,
+        });
+        break mainLoop;
+      }
+    }
+
+    currentSkipToken = graphPage.nextSkipToken;
+    if (!currentSkipToken) {
+      break;
+    }
+  }
+
+  return {
+    collected,
+    midPageToken,
+    nextSkipToken: lastNextSkipToken,
+    capHit,
+  };
 }
