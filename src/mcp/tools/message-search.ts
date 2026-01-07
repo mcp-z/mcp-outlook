@@ -148,6 +148,10 @@ async function handler({ query, pageSize = 50, pageToken, fields, shape = 'array
     const durationMs = Date.now() - started;
 
     const filteredItems = exec.items.map((item) => filterFields(item, requestedFields));
+    console.log(
+      'HANDLER OUTPUT IDS',
+      filteredItems.map((item) => item.id)
+    );
 
     logger.info('outlook.message.search returning', {
       query,

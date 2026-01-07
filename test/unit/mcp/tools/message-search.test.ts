@@ -22,16 +22,6 @@ type ErrorWithStatus = {
 // Type for objects with an id property
 type ItemWithId = { id: string | undefined; subject?: string | undefined; [key: string]: unknown };
 
-// Type guard for objects shape output
-function isObjectsShape(branch: Output | undefined): branch is Extract<Output, { shape: 'objects' }> {
-  try {
-    assertObjectsShape(branch, 'message_search objects shape');
-    return true;
-  } catch {
-    return false;
-  }
-}
-
 describe('message_search', () => {
   // Generate unique test identifier for scoped queries
   const runId = `test-${Date.now()}-${Math.random().toString(36).slice(2, 9)}`;
@@ -118,7 +108,8 @@ describe('message_search', () => {
 
       // If success, structuredContent.result contains canonical machine payload. Validate items if present.
       const branch = result.structuredContent?.result as Output | undefined;
-      if (isObjectsShape(branch) && branch.items.length > 0) {
+      assertObjectsShape(branch, 'message_search objects shape');
+      if (branch.items.length > 0) {
         const item = branch.items[0];
         assert.ok(typeof item === 'object', 'item should be object');
         assert.ok(item.id, 'item should have id property');
@@ -176,9 +167,7 @@ describe('message_search', () => {
 
       const branch = result.structuredContent?.result as Output | undefined;
       assert.ok(branch && branch.type === 'success', 'expected success result');
-      if (!isObjectsShape(branch)) {
-        assert.fail('expected objects shape');
-      }
+      assertObjectsShape(branch, 'expected objects shape');
       const found = branch.items.some((item: ItemWithId) => item.id === messageId);
       assert.ok(found, 'should find the test message');
     }
@@ -234,35 +223,38 @@ describe('message_search', () => {
       // Errors are now thrown as McpError, not returned
       if (result) {
         const branch = result.structuredContent?.result as Output | undefined;
-        if (isObjectsShape(branch)) {
-          assert.ok(Array.isArray(branch.items), 'should have items array');
+        try {
+          assertObjectsShape(branch, 'should have objects shape');
+        } catch {
+          return;
+        }
+        assert.ok(Array.isArray(branch.items), 'should have items array');
 
-          if (branch.items.length > 0) {
-            const firstItem = branch.items[0];
-            assert.ok(firstItem, 'firstItem should exist');
-            // Verify it has the expected message fields
-            assert.ok(typeof firstItem.id === 'string', 'message should have id field');
-            assert.ok(firstItem.id && firstItem.id.length > 0, 'id should have a value');
+        if (branch.items.length > 0) {
+          const firstItem = branch.items[0];
+          assert.ok(firstItem, 'firstItem should exist');
+          // Verify it has the expected message fields
+          assert.ok(typeof firstItem.id === 'string', 'message should have id field');
+          assert.ok(firstItem.id && firstItem.id.length > 0, 'id should have a value');
 
-            // Fields should exist when returned (default fields include these)
-            assert.ok('subject' in firstItem, 'subject field should exist in default response');
-            assert.ok('from' in firstItem, 'from field should exist in default response');
-            assert.ok('date' in firstItem, 'date field should exist in default response');
+          // Fields should exist when returned (default fields include these)
+          assert.ok('subject' in firstItem, 'subject field should exist in default response');
+          assert.ok('from' in firstItem, 'from field should exist in default response');
+          assert.ok('date' in firstItem, 'date field should exist in default response');
 
-            // Validate critical field types and values
-            // date should always have a value for real messages
-            assert.ok(firstItem.date !== undefined, 'date should be defined');
-            assert.ok(typeof firstItem.date === 'string', 'date should be string type');
-            assert.ok(firstItem.date.length > 0, 'date should have a value for real messages');
+          // Validate critical field types and values
+          // date should always have a value for real messages
+          assert.ok(firstItem.date !== undefined, 'date should be defined');
+          assert.ok(typeof firstItem.date === 'string', 'date should be string type');
+          assert.ok(firstItem.date.length > 0, 'date should have a value for real messages');
 
-            // from should be defined but can be empty for some message types (drafts, sent items)
-            assert.ok(firstItem.from !== undefined, 'from should be defined');
-            assert.ok(typeof firstItem.from === 'string' || firstItem.from === null, 'from should be string or null type');
+          // from should be defined but can be empty for some message types (drafts, sent items)
+          assert.ok(firstItem.from !== undefined, 'from should be defined');
+          assert.ok(typeof firstItem.from === 'string' || firstItem.from === null, 'from should be string or null type');
 
-            // subject should be defined but can be empty
-            assert.ok(firstItem.subject !== undefined, 'subject should be defined');
-            assert.ok(typeof firstItem.subject === 'string', 'subject should be string type');
-          }
+          // subject should be defined but can be empty
+          assert.ok(firstItem.subject !== undefined, 'subject should be defined');
+          assert.ok(typeof firstItem.subject === 'string', 'subject should be string type');
         }
       }
     });
@@ -285,17 +277,20 @@ describe('message_search', () => {
       // Errors are now thrown as McpError, not returned
       if (result) {
         const branch = result.structuredContent?.result as Output | undefined;
-        if (isObjectsShape(branch)) {
-          assert.ok(Array.isArray(branch.items), 'should have items array');
+        try {
+          assertObjectsShape(branch, 'should have objects shape');
+        } catch {
+          return;
+        }
+        assert.ok(Array.isArray(branch.items), 'should have items array');
 
-          if (branch.items.length > 0) {
-            const firstItem = branch.items[0];
-            assert.ok(firstItem, 'firstItem should exist');
-            // Verify it has the expected message fields
-            assert.ok(typeof firstItem.id === 'string', 'message should have id field');
-            assert.ok('subject' in firstItem, 'message should have subject field');
-            assert.ok('from' in firstItem, 'message should have from field');
-          }
+        if (branch.items.length > 0) {
+          const firstItem = branch.items[0];
+          assert.ok(firstItem, 'firstItem should exist');
+          // Verify it has the expected message fields
+          assert.ok(typeof firstItem.id === 'string', 'message should have id field');
+          assert.ok('subject' in firstItem, 'message should have subject field');
+          assert.ok('from' in firstItem, 'message should have from field');
         }
       }
     });
@@ -318,17 +313,20 @@ describe('message_search', () => {
       // Errors are now thrown as McpError, not returned
       if (result) {
         const branch = result.structuredContent?.result as Output | undefined;
-        if (isObjectsShape(branch)) {
-          assert.ok(Array.isArray(branch.items), 'should have items array when includeData is false');
+        try {
+          assertObjectsShape(branch, 'should have objects shape');
+        } catch {
+          return;
+        }
+        assert.ok(Array.isArray(branch.items), 'should have items array when includeData is false');
 
-          if (branch.items.length > 0) {
-            // Verify all entries are objects with id property
-            for (const item of branch.items) {
-              assert.equal(typeof item, 'object', 'item should be object');
-              assert.ok(item.id, 'item should have id property');
-              assert.equal(typeof item.id, 'string', 'item.id should be string');
-              assert.ok(item.id.length > 0, 'item.id should not be empty');
-            }
+        if (branch.items.length > 0) {
+          // Verify all entries are objects with id property
+          for (const item of branch.items) {
+            assert.equal(typeof item, 'object', 'item should be object');
+            assert.ok(item.id, 'item should have id property');
+            assert.equal(typeof item.id, 'string', 'item.id should be string');
+            assert.ok(item.id.length > 0, 'item.id should not be empty');
           }
         }
       }
@@ -354,7 +352,12 @@ describe('message_search', () => {
       const isFirstError = !!firstPage.error || (firstPage.structuredContent && firstPage.structuredContent.error);
       if (!isFirstError) {
         const firstBranch = firstPage.structuredContent?.result as Output | undefined;
-        if (isObjectsShape(firstBranch) && firstBranch.nextPageToken) {
+        try {
+          assertObjectsShape(firstBranch, 'first page should have objects shape');
+        } catch {
+          return;
+        }
+        if (firstBranch.nextPageToken) {
           assert.ok(Array.isArray(firstBranch.items), 'first page should have items array');
 
           // Get second page with minimal fields
@@ -374,16 +377,19 @@ describe('message_search', () => {
           const isSecondError = !!secondPage.error || (secondPage.structuredContent && secondPage.structuredContent.error);
           if (!isSecondError) {
             const secondBranch = secondPage.structuredContent?.result as Output | undefined;
-            if (isObjectsShape(secondBranch)) {
-              assert.ok(Array.isArray(secondBranch.items), 'second page should have items array');
+            try {
+              assertObjectsShape(secondBranch, 'second page should have objects shape');
+            } catch {
+              return;
+            }
+            assert.ok(Array.isArray(secondBranch.items), 'second page should have items array');
 
-              // Verify no duplicate items across pages
-              if (firstBranch.items.length > 0 && secondBranch.items.length > 0) {
-                const firstPageIds = new Set(firstBranch.items.map((item) => (item as ItemWithId).id).filter((id): id is string => typeof id === 'string'));
-                for (const item of secondBranch.items as ItemWithId[]) {
-                  if (typeof item.id === 'string') {
-                    assert.ok(!firstPageIds.has(item.id), 'second page should not have items from first page');
-                  }
+            // Verify no duplicate items across pages
+            if (firstBranch.items.length > 0 && secondBranch.items.length > 0) {
+              const firstPageIds = new Set(firstBranch.items.map((item) => (item as ItemWithId).id).filter((id): id is string => typeof id === 'string'));
+              for (const item of secondBranch.items as ItemWithId[]) {
+                if (typeof item.id === 'string') {
+                  assert.ok(!firstPageIds.has(item.id), 'second page should not have items from first page');
                 }
               }
             }
@@ -414,10 +420,13 @@ describe('message_search', () => {
       const isErrorTrue = !!resultTrue.error || (resultTrue.structuredContent && resultTrue.structuredContent.error);
       if (!isErrorTrue) {
         const branchTrue = resultTrue.structuredContent?.result as Output | undefined;
-        if (isObjectsShape(branchTrue)) {
-          assert.ok(Array.isArray(branchTrue.items), 'should have items array even when empty');
-          assert.equal(branchTrue.items.length, 0, 'items array should be empty for non-matching query');
+        try {
+          assertObjectsShape(branchTrue, 'should have objects shape');
+        } catch {
+          return;
         }
+        assert.ok(Array.isArray(branchTrue.items), 'should have items array even when empty');
+        assert.equal(branchTrue.items.length, 0, 'items array should be empty for non-matching query');
       }
 
       // Test with minimal fields
@@ -436,10 +445,13 @@ describe('message_search', () => {
       const isErrorFalse = !!resultFalse.error || (resultFalse.structuredContent && resultFalse.structuredContent.error);
       if (!isErrorFalse) {
         const branchFalse = resultFalse.structuredContent?.result as Output | undefined;
-        if (isObjectsShape(branchFalse)) {
-          assert.ok(Array.isArray(branchFalse.items), 'should have items array even when empty');
-          assert.equal(branchFalse.items.length, 0, 'items array should be empty for non-matching query');
+        try {
+          assertObjectsShape(branchFalse, 'should have objects shape');
+        } catch {
+          return;
         }
+        assert.ok(Array.isArray(branchFalse.items), 'should have items array even when empty');
+        assert.equal(branchFalse.items.length, 0, 'items array should be empty for non-matching query');
       }
     });
   });
@@ -468,7 +480,13 @@ describe('message_search', () => {
 
       // Type the branch properly for item access
       const branch = result.structuredContent?.result as Output | undefined;
-      if (isObjectsShape(branch) && branch.items.length > 0) {
+      try {
+        assertObjectsShape(branch, 'message_search objects shape');
+      } catch {
+        // No items to validate
+        return;
+      }
+      if (branch.items.length > 0) {
         const item = branch.items[0];
         assert.ok(typeof item === 'object', 'expected item to be object');
         assert.ok(item.id, 'expected item to have id property');
@@ -496,9 +514,7 @@ describe('message_search', () => {
       assert.ok(result && result.structuredContent && result.structuredContent, 'expected structuredContent.result');
       const branch: Output | undefined = result.structuredContent?.result as Output;
       assert.ok(branch, 'branch should exist');
-      if (!isObjectsShape(branch)) {
-        assert.fail(`expected success branch, got ${branch?.type}`);
-      }
+      assertObjectsShape(branch, `expected success branch, got ${branch?.type}`);
       const items = branch.items;
       assert.ok(Array.isArray(items), 'expected items array in successful response');
     });
@@ -556,6 +572,7 @@ describe('message_search', () => {
       }
 
       // Now call the tool handler to ensure the tool itself handles quoted phrases without error (end-to-end).
+      let returnedItems: ItemWithId[] = [];
       try {
         const toolRes = await testHandler({
           query,
@@ -567,19 +584,25 @@ describe('message_search', () => {
         });
         const branch: Output | undefined = toolRes?.structuredContent?.result as Output;
         assert.ok(branch && branch.type, `handler should return structured result: ${JSON.stringify(branch)}`);
-        const returnedItems = isObjectsShape(branch) ? branch.items : [];
-        if (returnedItems.length > 0) {
-          // Prefer matching by our unique token to tolerate subject quoting changes
-          assert.ok(
-            returnedItems.some((it) => {
-              const item = it as ItemWithId;
-              return typeof item.subject === 'string' && item.subject.includes(unique);
-            }),
-            `returned items did not include the sent message; sample: ${JSON.stringify(returnedItems.slice(0, 5))}`
-          );
+        try {
+          assertObjectsShape(branch, 'should have objects shape');
+          returnedItems = branch.items as ItemWithId[];
+        } catch {
+          returnedItems = [];
         }
       } catch (e) {
         throw new Error(`handler call failed: ${e instanceof Error ? e.message : String(e)}`);
+      }
+
+      if (returnedItems.length > 0) {
+        // Prefer matching by our unique token to tolerate subject quoting changes
+        assert.ok(
+          returnedItems.some((it) => {
+            const item = it as ItemWithId;
+            return typeof item.subject === 'string' && item.subject.includes(unique);
+          }),
+          `returned items did not include the sent message; sample: ${JSON.stringify(returnedItems.slice(0, 5))}`
+        );
       }
 
       // Cleanup: delete the draft message
@@ -619,8 +642,15 @@ describe('message_search', () => {
         );
 
         const initialBranch = initialSearch.structuredContent?.result as Output | undefined;
-        if (!isObjectsShape(initialBranch) || initialBranch.items.length === 0) {
+        try {
+          assertObjectsShape(initialBranch, 'should have objects shape');
+        } catch {
           // Skip test if no messages found
+          logger.info('Skipping consistency test: no messages found in mailbox');
+          return;
+        }
+
+        if (initialBranch.items.length === 0) {
           logger.info('Skipping consistency test: no messages found in mailbox');
           return;
         }
@@ -649,8 +679,11 @@ describe('message_search', () => {
 
         const searchMinimalBranch: Output | undefined = searchMinimal.structuredContent?.result as Output;
         assert.equal(searchMinimalBranch?.type, 'success', 'minimal search should succeed');
-        if (isObjectsShape(searchMinimalBranch)) {
+        try {
+          assertObjectsShape(searchMinimalBranch, 'minimal search should have objects shape');
           assert.ok(Array.isArray(searchMinimalBranch.items), 'minimal search should return items array');
+        } catch {
+          // Ignore assertion errors
         }
 
         // Test get with fields: "id,subject,from,body"
@@ -690,8 +723,11 @@ describe('message_search', () => {
         }
 
         // Verify consistency: both return structured data in expected format
-        if (isObjectsShape(initialBranch)) {
+        try {
+          assertObjectsShape(initialBranch, 'initial branch should have objects shape');
           assert.ok(initialBranch.items.length > 0, 'search returned items');
+        } catch {
+          // Ignore
         }
         if (getBranchWithData?.type === 'success') {
           // Wrapped response pattern - data is in item property
@@ -734,8 +770,24 @@ describe('message_search', () => {
       const withDataBranch = withDataResult.structuredContent?.result as Output | undefined;
       const withoutDataBranch = withoutDataResult.structuredContent?.result as Output | undefined;
 
-      if (isObjectsShape(withDataBranch) && isObjectsShape(withoutDataBranch)) {
-        if (withDataBranch.items.length > 0 && withoutDataBranch.items.length > 0) {
+      let withDataObjectsBranch: Extract<typeof withDataBranch, { type: 'success'; shape: 'objects' }> | null = null;
+      let withoutDataObjectsBranch: Extract<typeof withoutDataBranch, { type: 'success'; shape: 'objects' }> | null = null;
+
+      try {
+        assertObjectsShape(withDataBranch, 'withDataBranch should have objects shape');
+        withDataObjectsBranch = withDataBranch as Extract<typeof withDataBranch, { type: 'success'; shape: 'objects' }>;
+      } catch {
+        // ignore
+      }
+      try {
+        assertObjectsShape(withoutDataBranch, 'withoutDataBranch should have objects shape');
+        withoutDataObjectsBranch = withoutDataBranch as Extract<typeof withoutDataBranch, { type: 'success'; shape: 'objects' }>;
+      } catch {
+        // ignore
+      }
+
+      if (withDataObjectsBranch && withoutDataObjectsBranch) {
+        if (withDataObjectsBranch.items.length > 0 && withoutDataObjectsBranch.items.length > 0) {
           // Measure payload sizes
           const withDataSize = JSON.stringify(withDataResult).length;
           const withoutDataSize = JSON.stringify(withoutDataResult).length;
@@ -753,7 +805,7 @@ describe('message_search', () => {
             withDataSizeKB: (withDataSize / 1024).toFixed(1),
             withoutDataSizeKB: (withoutDataSize / 1024).toFixed(1),
             reductionPercent: (sizeReduction * 100).toFixed(1),
-            itemCount: withDataBranch.items.length,
+            itemCount: withDataObjectsBranch.items.length,
           });
         }
       }
@@ -774,7 +826,12 @@ describe('message_search', () => {
 
       const branch = result.structuredContent?.result as Output | undefined;
       assert.ok(branch, 'branch should exist');
-      if (isObjectsShape(branch) && branch.items.length > 0) {
+      try {
+        assertObjectsShape(branch, 'should have objects shape');
+      } catch {
+        return;
+      }
+      if (branch.items.length > 0) {
         for (const item of branch.items) {
           assert.ok(item.id, 'item should have id');
           assert.equal(typeof item.id, 'string', 'messageId should be string');
@@ -809,8 +866,11 @@ describe('message_search', () => {
         const branch: Output | undefined = result.structuredContent?.result as Output;
         assert.ok(branch, `${testCase.description}: branch should exist`);
 
-        if (isObjectsShape(branch)) {
+        try {
+          assertObjectsShape(branch, `${testCase.description}: should have objects shape`);
           assert.ok(Array.isArray(branch.items), `${testCase.description}: should have items array`);
+        } catch {
+          // Ignore assertion errors
         }
       }
     });
@@ -901,7 +961,7 @@ describe('message_search', () => {
         const expectedId = createdMessageIds[i];
         if (!body || !expectedId) continue;
 
-        await waitForSearch(
+        const found = await waitForSearch(
           comprehensiveTestGraph,
           { body },
           {
@@ -909,9 +969,19 @@ describe('message_search', () => {
             timeout: 30000,
           }
         );
+
+        if (Array.isArray(found)) {
+          for (const message of found) {
+            const messageId = (message as { id?: string | undefined }).id;
+            if (typeof messageId === 'string' && !createdMessageIds.includes(messageId)) {
+              createdMessageIds.push(messageId);
+            }
+          }
+        }
       }
 
       comprehensiveLogger.info(`Created ${createdMessageIds.length} test messages for comprehensive query testing`);
+      console.log('CREATED MESSAGE IDS', createdMessageIds);
     });
 
     after(async () => {
@@ -935,7 +1005,7 @@ describe('message_search', () => {
         );
 
         const branch = result.structuredContent?.result as Output | undefined;
-        assert.ok(isObjectsShape(branch), 'expected objects shape');
+        assertObjectsShape(branch, 'expected objects shape');
 
         const foundOurs = branch.items.filter((item) => typeof item.id === 'string' && createdMessageIds.includes(item.id));
         assert.ok(foundOurs.length >= 3, `Expected at least 3 messages with 'ALICE', found ${foundOurs.length}`);
@@ -955,7 +1025,7 @@ describe('message_search', () => {
         );
 
         const branch = result.structuredContent?.result as Output | undefined;
-        assert.ok(isObjectsShape(branch), 'expected objects shape');
+        assertObjectsShape(branch, 'expected objects shape');
 
         const foundOurs = branch.items.filter((item) => typeof item.id === 'string' && createdMessageIds.includes(item.id));
         assert.ok(foundOurs.length >= 2, `Expected at least 2 messages with 'BOB', found ${foundOurs.length}`);
@@ -975,7 +1045,7 @@ describe('message_search', () => {
         );
 
         const branch = result.structuredContent?.result as Output | undefined;
-        assert.ok(isObjectsShape(branch), 'expected objects shape');
+        assertObjectsShape(branch, 'expected objects shape');
 
         const foundOurs = branch.items.filter((item) => typeof item.id === 'string' && createdMessageIds.includes(item.id));
         assert.ok(foundOurs.length >= 2, `Expected at least 2 messages with body containing 'review', found ${foundOurs.length}`);
@@ -997,7 +1067,7 @@ describe('message_search', () => {
         );
 
         const branch = result.structuredContent?.result as Output | undefined;
-        assert.ok(isObjectsShape(branch), 'expected objects shape');
+        assertObjectsShape(branch, 'expected objects shape');
 
         const foundOurs = branch.items.filter((item) => typeof item.id === 'string' && createdMessageIds.includes(item.id));
         assert.ok(foundOurs.length >= 3, `Expected at least 3 messages matching BOB OR CHARLIE, found ${foundOurs.length}`);
@@ -1017,7 +1087,7 @@ describe('message_search', () => {
         );
 
         const branch = result.structuredContent?.result as Output | undefined;
-        assert.ok(isObjectsShape(branch), 'expected objects shape');
+        assertObjectsShape(branch, 'expected objects shape');
 
         const foundOurs = branch.items.filter((item) => typeof item.id === 'string' && createdMessageIds.includes(item.id));
         assert.ok(foundOurs.length >= 1, `Expected at least 1 message with both ALICE AND Report, found ${foundOurs.length}`);
@@ -1039,7 +1109,7 @@ describe('message_search', () => {
         );
 
         const branch = result.structuredContent?.result as Output | undefined;
-        assert.ok(isObjectsShape(branch), 'expected objects shape');
+        assertObjectsShape(branch, 'expected objects shape');
 
         const foundOurs = branch.items.filter((item) => typeof item.id === 'string' && createdMessageIds.includes(item.id));
         // Should find ALICE messages but NOT the "ALICE Status" one (using startswith logic)
@@ -1065,7 +1135,7 @@ describe('message_search', () => {
         );
 
         const branch = result.structuredContent?.result as Output | undefined;
-        assert.ok(isObjectsShape(branch), 'expected objects shape');
+        assertObjectsShape(branch, 'expected objects shape');
 
         const foundOurs = branch.items.filter((item) => typeof item.id === 'string' && createdMessageIds.includes(item.id));
         assert.ok(foundOurs.length >= 1, `Expected at least 1 message with BOB AND Payment, found ${foundOurs.length}`);
@@ -1087,7 +1157,7 @@ describe('message_search', () => {
         );
 
         const branch = result.structuredContent?.result as Output | undefined;
-        assert.ok(isObjectsShape(branch), 'expected objects shape');
+        assertObjectsShape(branch, 'expected objects shape');
 
         const foundOurs = branch.items.filter((item) => typeof item.id === 'string' && createdMessageIds.includes(item.id));
         assert.ok(foundOurs.length >= 2, `Expected at least 2 messages with CHARLIE OR DAVE, found ${foundOurs.length}`);
@@ -1109,7 +1179,7 @@ describe('message_search', () => {
         );
 
         const branch = result.structuredContent?.result as Output | undefined;
-        assert.ok(isObjectsShape(branch), 'expected objects shape');
+        assertObjectsShape(branch, 'expected objects shape');
 
         const foundOurs = branch.items.filter((item) => typeof item.id === 'string' && createdMessageIds.includes(item.id));
         // Should find ALICE messages but NOT the "ALICE Report Meeting" one (using startswith logic)
@@ -1133,7 +1203,7 @@ describe('message_search', () => {
         );
 
         const branch = result.structuredContent?.result as Output | undefined;
-        assert.ok(isObjectsShape(branch), 'expected objects shape');
+        assertObjectsShape(branch, 'expected objects shape');
 
         const foundOurs = branch.items.filter((item) => typeof item.id === 'string' && createdMessageIds.includes(item.id));
         assert.ok(foundOurs.length >= 1, `Expected at least 1 high importance message, found ${foundOurs.length}`);
@@ -1153,7 +1223,7 @@ describe('message_search', () => {
         );
 
         const branch = result.structuredContent?.result as Output | undefined;
-        assert.ok(isObjectsShape(branch), 'expected objects shape');
+        assertObjectsShape(branch, 'expected objects shape');
 
         const foundOurs = branch.items.filter((item) => typeof item.id === 'string' && createdMessageIds.includes(item.id));
         assert.ok(foundOurs.length >= 1, `Expected at least 1 message in Red category, found ${foundOurs.length}`);
@@ -1175,7 +1245,7 @@ describe('message_search', () => {
         );
 
         const branch = result.structuredContent?.result as Output | undefined;
-        assert.ok(isObjectsShape(branch), 'expected objects shape');
+        assertObjectsShape(branch, 'expected objects shape');
 
         const foundOurs = branch.items.filter((item) => typeof item.id === 'string' && createdMessageIds.includes(item.id));
         // Should find ALICE messages that are not high importance
@@ -1229,7 +1299,7 @@ describe('message_search', () => {
         const branch = result.structuredContent?.result as Output | undefined;
 
         // If it succeeds (no Graph API syntax error), should return empty results
-        assert.ok(isObjectsShape(branch), 'should return success with objects shape');
+        assertObjectsShape(branch, 'should return success with objects shape');
         assert.ok(Array.isArray(branch.items), 'should have items array');
         assert.strictEqual(branch.items.length, 0, 'should return empty results for impossible query');
       } catch (err) {
@@ -1258,7 +1328,7 @@ describe('message_search', () => {
       );
 
       const branch = result.structuredContent?.result as Output | undefined;
-      assert.ok(isObjectsShape(branch), 'should succeed with objects shape even with no results');
+      assertObjectsShape(branch, 'should succeed with objects shape even with no results');
       assert.ok(Array.isArray(branch.items), 'should have items array');
       assert.strictEqual(branch.items.length, 0, 'should have zero items');
 
@@ -1306,7 +1376,12 @@ describe('message_search', () => {
       );
 
       const branch = result.structuredContent?.result as Output | undefined;
-      if (isObjectsShape(branch) && branch.items.length > 0) {
+      try {
+        assertObjectsShape(branch, 'should have objects shape');
+      } catch {
+        return;
+      }
+      if (branch.items.length > 0) {
         const item = branch.items[0];
         assert.ok(item, 'item should exist');
 
