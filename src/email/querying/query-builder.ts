@@ -81,7 +81,7 @@ export function toGraphFilter(query: QueryNode): ODataFilterResult {
 
   if (hasFullTextIntent(query)) {
     const searchCollect = collectSearchTerms(query);
-    const search = searchCollect.terms.length ? searchCollect.terms.join(' AND ') : null;
+    const search = searchCollect.terms.length ? searchCollect.terms.join(' OR ') : null;
     return {
       search,
       filter: null,
@@ -90,168 +90,7 @@ export function toGraphFilter(query: QueryNode): ODataFilterResult {
     };
   }
 
-  function L(s: string) {
-    // Microsoft Graph does NOT support toLower() function in OData filters
-    // Case-insensitive matching must be done client-side or via $search
-    return s;
-  }
-  function p(s: string) {
-    return `(${s})`;
-  }
-
-  function recip(coll: string, V: string) {
-    // Graph may reject functions on nested properties; use equality on nested address/name fields.
-    const left = `r/emailAddress/address eq ${V}`;
-    const right = `r/emailAddress/name eq ${V}`;
-    return `${coll}/any(r: ${left} or ${right})`;
-  }
-
-  function fv(field: string, raw: string | number | boolean | null | undefined): string {
-    if (raw == null) return '';
-    const rawStr = String(raw);
-
-    // For text and body fields, skip OData filtering entirely (uses KQL search instead)
-    // Do this BEFORE validation so we don't throw on valid text/body queries
-    if (field === 'text' || field === 'body') {
-      if (rawStr.trim() === '') {
-        throw new Error(`Invalid ${field} value: empty string`);
-      }
-      return '';
-    }
-
-    // For all other fields, validate non-empty AFTER checking for null
-    if (rawStr.trim() === '') {
-      throw new Error(`Invalid ${field} value: empty string`);
-    }
-
-    const V = `'${rawStr.toLowerCase().replace(/'/g, "''")}'`;
-    switch (field) {
-      case 'from': {
-        // For email addresses emit equality checks on nested address/name;
-        // for name-only tokens, skip server-side filter (handled client-side or via $search).
-        if (rawStr.includes('@')) {
-          const addrEq = `${L('from/emailAddress/address')} eq ${V}`;
-          const nameEq = `${L('from/emailAddress/name')} eq ${V}`;
-          return p(`${addrEq} or ${nameEq}`);
-        }
-        // Don't emit a server-side filter for name-only 'from' tokens.
-        return '';
-      }
-      case 'to':
-        return recip('toRecipients', V);
-      case 'cc':
-        return recip('ccRecipients', V);
-      case 'bcc':
-        return recip('bccRecipients', V);
-      case 'subject':
-        // Microsoft Graph does NOT support contains() function in OData filters
-        // Use startswith as a partial alternative or rely on $search
-        if (rawStr.includes('-') || rawStr.length < 3) return '';
-        return `startswith(subject, ${V})`;
-      case 'categories': {
-        // mapOutlookCategory will throw on invalid input (fail fast)
-        const systemCategory = mapOutlookCategory(rawStr);
-        // Use the categories OData property with exact case-sensitive match
-        return `categories/any(c: c eq '${systemCategory}')`;
-      }
-      case 'label': {
-        // Direct passthrough to categories for Outlook (case-sensitive)
-        return `categories/any(c: c eq '${rawStr.replace(/'/g, "''")}')`;
-      }
-      default:
-        // Microsoft Graph does NOT support contains() function
-        // For unknown fields, skip server-side filtering
-        return '';
-    }
-  }
-
-  function chain(op: 'and' | 'or', arr: Array<string | undefined>) {
-    if (!arr || arr.length === 0) {
-      throw new Error(`chain: empty array for ${op} operation`);
-    }
-    if (arr.length === 1) {
-      const first = arr[0] ?? '';
-      return String(first);
-    }
-    const joined = arr.join(` ${op} `);
-    return p(joined);
-  }
-  function fieldExpr(field: string, op: FieldOperator | string): string {
-    if (typeof op === 'string') {
-      return fv(field, op);
-    }
-
-    if (Array.isArray(op.$any)) {
-      const results = op.$any.map((v) => fv(field, String(v ?? '')));
-      // Filter out empty strings (from fields like text/body that don't generate OData filters)
-      const validResults = results.filter((s) => s && s.trim());
-      if (validResults.length === 0) return '';
-      return chain('or', validResults);
-    }
-    if (Array.isArray(op.$all)) {
-      const results = op.$all.map((v) => fv(field, String(v ?? '')));
-      // Filter out empty strings (from fields like text/body that don't generate OData filters)
-      const validResults = results.filter((s) => s && s.trim());
-      if (validResults.length === 0) return '';
-      return chain('and', validResults);
-    }
-    if (Array.isArray(op.$none)) {
-      const results = op.$none.map((v) => fv(field, String(v ?? '')));
-      // Filter out empty strings (from fields like text/body that don't generate OData filters)
-      const validResults = results.filter((s) => s && s.trim());
-      if (validResults.length === 0) return '';
-      return `not ${p(chain('or', validResults))}`;
-    }
-    throw new Error(`Unknown field operator ${JSON.stringify(op)}`);
-  }
-
-  function dateExpr(d: DateOperator): string {
-    const parts: string[] = [];
-    if (d.$gte) parts.push(`receivedDateTime ge ${d.$gte}T00:00:00Z`);
-    if (d.$lt) parts.push(`receivedDateTime lt ${d.$lt}T00:00:00Z`);
-    return parts.length > 1 ? p(parts.join(' and ')) : (parts[0] ?? '');
-  }
-
-  function emit(n: QueryNode): string {
-    if (!n || typeof n !== 'object') return '';
-
-    if ('$and' in n && n.$and) {
-      const andParts = n.$and.map(emit).filter((part: string): part is string => Boolean(part));
-      if (andParts.length === 0) return '';
-      if (andParts.length === 1) {
-        const firstPart = andParts[0];
-        return firstPart ?? '';
-      }
-      return p(andParts.join(' and '));
-    }
-    if ('$or' in n && n.$or) {
-      const orParts = n.$or.map(emit).filter((part: string): part is string => Boolean(part));
-      if (orParts.length === 0) return '';
-      if (orParts.length === 1) {
-        const firstPart = orParts[0];
-        return firstPart ?? '';
-      }
-      return p(orParts.join(' or '));
-    }
-    if ('$not' in n && n.$not) {
-      const notExpr = emit(n.$not);
-      return notExpr ? `not (${notExpr})` : '';
-    }
-    if ('hasAttachment' in n && n.hasAttachment) return 'hasAttachments eq true';
-    if ('date' in n && n.date) return dateExpr(n.date);
-
-    const keys = Object.keys(n);
-    if (keys.length === 1) {
-      const k0 = String(keys[0] ?? '');
-      if (k0 && ['from', 'to', 'cc', 'bcc', 'subject', 'text', 'body', 'categories', 'label'].includes(k0)) {
-        const fieldValue = (n as FieldQuery)[k0 as keyof FieldQuery];
-        if (fieldValue) return fieldExpr(k0, fieldValue);
-      }
-    }
-    return '';
-  }
-
-  const filterStr = emit(query);
+  const filterStr = buildQueryFilter(query);
   const cleanedFilter = filterStr && typeof filterStr === 'string' && filterStr.trim().length ? filterStr.trim() : null;
   return {
     search: null,
@@ -326,10 +165,7 @@ function collectSearchTerms(query: QueryNode): { terms: string[]; usesText: bool
       pushAnyTerms(value.$any);
     }
     if (Array.isArray(value.$all) && value.$all.length > 0) {
-      for (const term of value.$all) {
-        const clause = buildClause(null, String(term ?? ''));
-        if (clause) state.terms.push(clause);
-      }
+      pushAllTerms(value.$all);
     }
     if (Array.isArray(value.$none) && value.$none.length > 0) {
       const clauses = value.$none.map((term) => buildClause(null, String(term ?? ''))).filter(Boolean);
@@ -345,6 +181,12 @@ function collectSearchTerms(query: QueryNode): { terms: string[]; usesText: bool
     const clauses = values.map((val) => buildClause(null, val)).filter(Boolean);
     if (!clauses.length) return;
     state.terms.push(clauses.length === 1 ? clauses[0] : `(${clauses.join(' OR ')})`);
+  }
+
+  function pushAllTerms(values: string[]) {
+    const clauses = values.map((val) => buildClause(null, val)).filter(Boolean);
+    if (!clauses.length) return;
+    state.terms.push(clauses.length === 1 ? clauses[0] : `(${clauses.join(' AND ')})`);
   }
 
   function escapeKQL(value: string): string {
@@ -396,6 +238,152 @@ function hasFullTextIntent(node: QueryNode | undefined | null): boolean {
   return false;
 }
 
+export function buildQueryFilter(query: QueryNode): string {
+  function L(s: string) {
+    return s;
+  }
+
+  function p(s: string) {
+    return `(${s})`;
+  }
+
+  function recip(coll: string, V: string) {
+    const left = `r/emailAddress/address eq ${V}`;
+    const right = `r/emailAddress/name eq ${V}`;
+    return `${coll}/any(r: ${left} or ${right})`;
+  }
+
+  function fv(field: string, raw: string | number | boolean | null | undefined): string {
+    if (raw == null) return '';
+    const rawStr = String(raw);
+
+    if (field === 'text' || field === 'body') {
+      if (rawStr.trim() === '') {
+        throw new Error(`Invalid ${field} value: empty string`);
+      }
+      return '';
+    }
+
+    if (rawStr.trim() === '') {
+      throw new Error(`Invalid ${field} value: empty string`);
+    }
+
+    const V = `'${rawStr.toLowerCase().replace(/'/g, "''")}'`;
+    switch (field) {
+      case 'from': {
+        if (rawStr.includes('@')) {
+          const addrEq = `${L('from/emailAddress/address')} eq ${V}`;
+          const nameEq = `${L('from/emailAddress/name')} eq ${V}`;
+          return p(`${addrEq} or ${nameEq}`);
+        }
+        return '';
+      }
+      case 'to':
+        return recip('toRecipients', V);
+      case 'cc':
+        return recip('ccRecipients', V);
+      case 'bcc':
+        return recip('bccRecipients', V);
+      case 'subject':
+        if (rawStr.includes('-') || rawStr.length < 3) return '';
+        return `startswith(subject, ${V})`;
+      case 'categories': {
+        const systemCategory = mapOutlookCategory(rawStr);
+        return `categories/any(c: c eq '${systemCategory}')`;
+      }
+      case 'label':
+        return `categories/any(c: c eq '${rawStr.replace(/'/g, "''")}')`;
+      default:
+        return '';
+    }
+  }
+
+  function chain(op: 'and' | 'or', arr: Array<string | undefined>) {
+    if (!arr || arr.length === 0) {
+      throw new Error(`chain: empty array for ${op} operation`);
+    }
+    if (arr.length === 1) {
+      const first = arr[0] ?? '';
+      return String(first);
+    }
+    const joined = arr.join(` ${op} `);
+    return p(joined);
+  }
+
+  function fieldExpr(field: string, op: FieldOperator | string): string {
+    if (typeof op === 'string') {
+      return fv(field, op);
+    }
+
+    if (Array.isArray(op.$any)) {
+      const results = op.$any.map((v) => fv(field, String(v ?? '')));
+      const validResults = results.filter((s) => s && s.trim());
+      if (validResults.length === 0) return '';
+      return chain('or', validResults);
+    }
+    if (Array.isArray(op.$all)) {
+      const results = op.$all.map((v) => fv(field, String(v ?? '')));
+      const validResults = results.filter((s) => s && s.trim());
+      if (validResults.length === 0) return '';
+      return chain('and', validResults);
+    }
+    if (Array.isArray(op.$none)) {
+      const results = op.$none.map((v) => fv(field, String(v ?? '')));
+      const validResults = results.filter((s) => s && s.trim());
+      if (validResults.length === 0) return '';
+      return `not ${p(chain('or', validResults))}`;
+    }
+    throw new Error(`Unknown field operator ${JSON.stringify(op)}`);
+  }
+
+  function dateExpr(d: DateOperator): string {
+    const parts: string[] = [];
+    if (d.$gte) parts.push(`receivedDateTime ge ${d.$gte}T00:00:00Z`);
+    if (d.$lt) parts.push(`receivedDateTime lt ${d.$lt}T00:00:00Z`);
+    return parts.length > 1 ? p(parts.join(' and ')) : (parts[0] ?? '');
+  }
+
+  function emit(n: QueryNode): string {
+    if (!n || typeof n !== 'object') return '';
+
+    if ('$and' in n && n.$and) {
+      const andParts = n.$and.map(emit).filter((part: string): part is string => Boolean(part));
+      if (andParts.length === 0) return '';
+      if (andParts.length === 1) {
+        const firstPart = andParts[0];
+        return firstPart ?? '';
+      }
+      return p(andParts.join(' and '));
+    }
+    if ('$or' in n && n.$or) {
+      const orParts = n.$or.map(emit).filter((part: string): part is string => Boolean(part));
+      if (orParts.length === 0) return '';
+      if (orParts.length === 1) {
+        const firstPart = orParts[0];
+        return firstPart ?? '';
+      }
+      return p(orParts.join(' or '));
+    }
+    if ('$not' in n && n.$not) {
+      const notExpr = emit(n.$not);
+      return notExpr ? `not (${notExpr})` : '';
+    }
+    if ('hasAttachment' in n && n.hasAttachment) return 'hasAttachments eq true';
+    if ('date' in n && n.date) return dateExpr(n.date);
+
+    const keys = Object.keys(n);
+    if (keys.length === 1) {
+      const k0 = String(keys[0] ?? '');
+      if (k0 && ['from', 'to', 'cc', 'bcc', 'subject', 'text', 'body', 'categories', 'label'].includes(k0)) {
+        const fieldValue = (n as FieldQuery)[k0 as keyof FieldQuery];
+        if (fieldValue) return fieldExpr(k0, fieldValue);
+      }
+    }
+    return '';
+  }
+
+  return emit(query);
+}
 export function toOutlookFilter(parsed: QueryNode, _options?: { includeBodyContent?: boolean; useCaseInsensitiveWrap?: boolean }) {
   const graphResult = toGraphFilter(parsed);
   const filters = extractOutlookFilters(parsed);
