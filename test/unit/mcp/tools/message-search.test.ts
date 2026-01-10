@@ -543,33 +543,21 @@ describe('message_search', () => {
       const query = { exactPhrase: 'special offer' };
       let foundItem: ItemWithId | null = null;
 
-      try {
-        // Use waitForSearch utility instead of inline polling to reduce API quota usage
-        // This uses the same $search API that the message-search tool uses
-        const messages = await waitForSearch(sharedGraph, query, {
-          timeout: 30000,
-          select: 'id,subject',
-        });
+      // Use waitForSearch utility instead of inline polling to reduce API quota usage
+      // This uses the same $search API that the message-search tool uses
+      const messages = await waitForSearch(sharedGraph, query, {
+        timeout: 30000,
+        select: 'id,subject',
+      });
 
-        // Find the message with our unique identifier
-        foundItem =
-          (messages.find((m: unknown) => {
-            const item = m as ItemWithId;
-            return typeof item.subject === 'string' && item.subject.includes(unique);
-          }) as ItemWithId | undefined) || null;
+      // Find the message with our unique identifier
+      foundItem =
+        (messages.find((m: unknown) => {
+          const item = m as ItemWithId;
+          return typeof item.subject === 'string' && item.subject.includes(unique);
+        }) as ItemWithId | undefined) || null;
 
-        if (!foundItem) {
-          // Message found by search but doesn't match our unique identifier - skip test
-          logger.info('Message found by search but unique identifier not matched, skipping test');
-          return;
-        }
-      } catch (error) {
-        // If waitForSearch times out or fails, skip test instead of failing
-        logger.info('waitForSearch timed out, skipping test', {
-          error: error instanceof Error ? error.message : String(error),
-        });
-        return;
-      }
+      assert.ok(foundItem, 'expected waitForSearch to locate the unique draft message');
 
       // Now call the tool handler to ensure the tool itself handles quoted phrases without error (end-to-end).
       let returnedItems: ItemWithId[] = [];
