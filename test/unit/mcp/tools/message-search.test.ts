@@ -168,7 +168,7 @@ describe('message_search', () => {
       const branch = result.structuredContent?.result as Output | undefined;
       assert.ok(branch && branch.type === 'success', 'expected success result');
       assertObjectsShape(branch, 'expected objects shape');
-      const found = branch.items.some((item: ItemWithId) => item.id === messageId);
+      const found = branch.items.some((item) => (item as ItemWithId).id === messageId);
       assert.ok(found, 'should find the test message');
     }
 

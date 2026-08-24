@@ -10,7 +10,7 @@ export function buildClientPredicate(query: OutlookQuery): Predicate {
   return (message) => nodePredicate(message);
 }
 
-export function needsBody(query: OutlookQuery): boolean {
+export function needsBody(query: OutlookQuery | undefined | null): boolean {
   return hasBodyTextOrExact(query);
 }
 
@@ -48,34 +48,44 @@ function buildNodePredicate(node: OutlookQuery | undefined | null): Predicate {
   }
 
   if ('from' in node && node.from) {
-    predicates.push((message) => matchesAddressField(normalizeAddress(message.from), node.from));
+    const from = node.from;
+    predicates.push((message) => matchesAddressField(normalizeAddress(message.from), from));
   }
   if ('to' in node && node.to) {
-    predicates.push((message) => matchesRecipientField(message.toRecipients, node.to));
+    const to = node.to;
+    predicates.push((message) => matchesRecipientField(message.toRecipients, to));
   }
   if ('cc' in node && node.cc) {
-    predicates.push((message) => matchesRecipientField(message.ccRecipients, node.cc));
+    const cc = node.cc;
+    predicates.push((message) => matchesRecipientField(message.ccRecipients, cc));
   }
   if ('bcc' in node && node.bcc) {
-    predicates.push((message) => matchesRecipientField(message.bccRecipients, node.bcc));
+    const bcc = node.bcc;
+    predicates.push((message) => matchesRecipientField(message.bccRecipients, bcc));
   }
   if ('subject' in node && node.subject) {
-    predicates.push((message) => matchesSubject(message, node.subject));
+    const subject = node.subject;
+    predicates.push((message) => matchesSubject(message, subject));
   }
   if ('text' in node && node.text) {
-    predicates.push((message) => matchesText(message, node.text));
+    const text = node.text;
+    predicates.push((message) => matchesText(message, text));
   }
   if ('body' in node && node.body) {
-    predicates.push((message) => matchesBody(message, node.body));
+    const body = node.body;
+    predicates.push((message) => matchesBody(message, body));
   }
   if ('exactPhrase' in node && node.exactPhrase) {
-    predicates.push((message) => matchesExactPhrase(message, node.exactPhrase));
+    const exactPhrase = node.exactPhrase;
+    predicates.push((message) => matchesExactPhrase(message, exactPhrase));
   }
   if ('categories' in node && node.categories) {
-    predicates.push((message) => matchesCategoryField(message.categories ?? [], node.categories));
+    const categories = node.categories;
+    predicates.push((message) => matchesCategoryField(message.categories ?? [], categories));
   }
   if ('label' in node && node.label) {
-    predicates.push((message) => matchesLabelField(message.categories ?? [], node.label));
+    const label = node.label;
+    predicates.push((message) => matchesLabelField(message.categories ?? [], label));
   }
 
   if (predicates.length === 0) return () => true;
@@ -135,14 +145,14 @@ function matchesAddressField(addressData: NormalizedAddress, value: string | Fie
 
 type NormalizedAddress = { address: string; name: string };
 
-function normalizeAddress(recipient: Recipient | undefined): NormalizedAddress {
+function normalizeAddress(recipient: Recipient | null | undefined): NormalizedAddress {
   return {
     address: normalizeForMatch(recipient?.emailAddress?.address),
     name: normalizeForMatch(recipient?.emailAddress?.name),
   };
 }
 
-function matchesRecipientField(recipients: Recipient[] | undefined, value: string | FieldOperator): boolean {
+function matchesRecipientField(recipients: Recipient[] | null | undefined, value: string | FieldOperator): boolean {
   const normalizedRecipients = (recipients ?? []).map((recipient) => ({
     address: normalizeForMatch(recipient?.emailAddress?.address),
     name: normalizeForMatch(recipient?.emailAddress?.name),
@@ -173,7 +183,7 @@ function matchesLabelField(categories: string[], value: string | FieldOperator):
   return evaluateOperator(value, matchTerm, normalizeLabelTerm);
 }
 
-function matchesDate(received: string | undefined, gte?: string, lt?: string): boolean {
+function matchesDate(received: string | null | undefined, gte?: string, lt?: string): boolean {
   if (!received) return false;
   const receivedTs = Date.parse(received);
   if (Number.isNaN(receivedTs)) return false;
@@ -188,7 +198,7 @@ function matchesDate(received: string | undefined, gte?: string, lt?: string): b
   return true;
 }
 
-function evaluateOperator(value: string | FieldOperator, matcher: (normalizedTerm: string) => boolean, normalizeFn: (input: string) => string = normalizeTerm): boolean {
+function evaluateOperator(value: string | FieldOperator, matcher: (normalizedTerm: string) => boolean, normalizeFn: (input: string) => string | null = normalizeTerm): boolean {
   if (typeof value === 'string') {
     const normalized = normalizeFn(value);
     return normalized !== null && matcher(normalized);
@@ -217,7 +227,7 @@ function normalizeTerm(input: string): string | null {
   return collapsed === '' ? null : collapsed;
 }
 
-function normalizeForMatch(value?: string): string {
+function normalizeForMatch(value?: string | null): string {
   return normalizeTerm(value ?? '') ?? '';
 }
 
