@@ -79,13 +79,6 @@ export async function searchMessages(graph: Client, opts: OutlookSearchOptions):
     mode: 'search',
   });
 
-  if (query && 'text' in query && typeof query.text === 'object' && Array.isArray(query.text.$all)) {
-    console.log(
-      'SEARCH RESULT IDS',
-      searchResult.collected.map((msg) => msg.id)
-    );
-  }
-
   if (searchResult.capHit) {
     return { messages: searchResult.collected };
   }

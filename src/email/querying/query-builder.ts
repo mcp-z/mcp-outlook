@@ -186,7 +186,9 @@ function collectSearchTerms(query: QueryNode): { terms: string[]; usesText: bool
   function pushAllTerms(values: string[]) {
     const clauses = values.map((val) => buildClause(null, val)).filter(Boolean);
     if (!clauses.length) return;
-    state.terms.push(clauses.length === 1 ? clauses[0] : `(${clauses.join(' AND ')})`);
+    // Graph $search silently ignores "(A AND B)" expressions, so narrow with the
+    // first term only; the client-side $all predicate enforces the rest.
+    state.terms.push(clauses[0]);
   }
 
   function escapeKQL(value: string): string {
