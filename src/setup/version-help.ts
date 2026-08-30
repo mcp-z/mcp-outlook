@@ -4,7 +4,7 @@ import * as path from 'path';
 import * as url from 'url';
 import { parseArgs } from 'util';
 
-// Kept dependency-free (fs/path/url/module-root-sync only) so `--version`/`--help`/`version`
+// Kept dependency-free (fs/path/url/module-root-sync only) so `--version`/`--help`
 // resolve nothing beyond Node startup: config.ts's parseConfig pulls in @mcp-z/oauth-microsoft
 // and @mcp-z/server, which this path must not touch.
 const pkg = JSON.parse(fs.readFileSync(path.join(moduleRoot(url.fileURLToPath(import.meta.url)), 'package.json'), 'utf-8'));
@@ -31,9 +31,6 @@ Options:
   --resource-store-uri=<uri>    Resource store URI for CSV file storage (default: file://~/.mcp-z/mcp-outlook/files)
   --base-url=<url>       Base URL for HTTP file serving (default: http://localhost for HTTP transports)
 
-Commands:
-  version                Show version number
-
 Environment Variables:
   MS_CLIENT_ID           OAuth client ID (REQUIRED)
   MS_TENANT_ID           Microsoft tenant ID (REQUIRED)
@@ -49,12 +46,18 @@ Environment Variables:
   RESOURCE_STORE_URI            Resource store URI (optional, file://)
   BASE_URL               Base URL for HTTP file serving (optional)
 
+Storage Backends:
+  TOKEN_STORE_URI and DCR_STORE_URI accept any keyv-registry protocol.
+  file:// (the default) and memory:// work out of the box. Any other backend
+  needs its adapter installed alongside this server:
+    npm install -g @keyv/redis
+    TOKEN_STORE_URI=redis://localhost:6379 mcp-outlook
+
 OAuth Scopes:
   openid profile offline_access https://graph.microsoft.com/User.Read https://graph.microsoft.com/Mail.ReadWrite https://graph.microsoft.com/Mail.Send https://graph.microsoft.com/MailboxSettings.ReadWrite
 
 Examples:
   mcp-outlook                           # Use default settings
-  mcp-outlook version                   # Print version number
   mcp-outlook --auth=device-code        # Use device code auth
   mcp-outlook --port=3000               # HTTP transport on port 3000
   mcp-outlook --tenant-id=xxx           # Set tenant ID
@@ -68,21 +71,21 @@ export function readPkg(): { name: string; version: string; repository?: string 
 }
 
 /**
- * Handle --version/--help flags and the `version` subcommand before config parsing.
+ * Handle --version/--help flags before config parsing.
  * These must work without requiring any configuration or heavy dependency.
  */
 export function handleVersionHelp(args: string[]): { handled: boolean; output?: string } {
-  const { values, positionals } = parseArgs({
+  const { values } = parseArgs({
     args,
     options: {
-      version: { type: 'boolean' },
-      help: { type: 'boolean' },
+      version: { type: 'boolean', short: 'v' },
+      help: { type: 'boolean', short: 'h' },
     },
     strict: false,
     allowPositionals: true,
   });
 
-  if (values.version || positionals[0] === 'version') return { handled: true, output: pkg.version };
+  if (values.version) return { handled: true, output: pkg.version };
   if (values.help) return { handled: true, output: HELP_TEXT };
   return { handled: false };
 }
