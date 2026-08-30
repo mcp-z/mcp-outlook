@@ -78,7 +78,8 @@
     "cors": "^2.0.0",
     "csv-stringify": "^6.0.0",
     "express": "^5.0.0",
-    "keyv-registry": "^1.0.0",
+    "keyv-file": "5.3.3",
+    "keyv-registry": "^2.0.0",
     "module-root-sync": "^2.0.0",
     "pino": "^10.0.0",
     "zod": "^4.0.0"
@@ -90,6 +91,7 @@
     "@types/mocha": "^10.0.10",
     "@types/node": "^26.2.0",
     "dotenv": "^17.2.3",
+    "fs-remove-compat": "^1.0.4",
     "get-port": "5.1.1",
     "keyv": "^5.0.0",
     "node-version-use": "^2.4.7",

@@ -1,4 +1,4 @@
 {
   "upgrade": true,
-  "reject": ["get-port"]
+  "reject": ["get-port", "keyv-file"]
 }
