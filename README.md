@@ -1,6 +1,6 @@
 # @mcp-z/mcp-outlook
 
-Docs: https://mcp-z.github.io/mcp-outlook Outlook MCP server for searching, reading, and sending Microsoft 365 mail.
+MCP server for Outlook integration with OAuth authentication, message search, and batch operations
 
 ## Common uses
 
@@ -206,3 +206,7 @@ TOKEN_STORE_URI=redis://localhost:6379 mcp-outlook
 ```
 
 A protocol whose adapter is missing fails at startup naming the package to install.
+
+### Documentation
+
+[API Docs](https://mcp-z.github.io/mcp-outlook)
