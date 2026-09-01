@@ -1,7 +1,8 @@
+import { mcp } from '@mcp-z/mcp-outlook';
 import type { Logger, MicrosoftAuthProvider } from '@mcp-z/oauth-microsoft';
 import { Client } from '@microsoft/microsoft-graph-client';
 import assert from 'assert';
-import createTool, { type Input, type Output } from '../../../../src/mcp/tools/message-move-to-trash.ts';
+import type { Input, Output } from '../../../../src/mcp/tools/message-move-to-trash.ts';
 import { createExtra, type TypedHandler } from '../../../lib/create-extra.ts';
 import createMiddlewareContext from '../../../lib/create-middleware-context.ts';
 import { createTestDraftMessage, deleteTestMessage } from '../../../lib/message-helpers.ts';
@@ -17,7 +18,7 @@ describe('outlook-message-move-to-trash', () => {
   // Shared context and Graph client for all tests
   let auth: MicrosoftAuthProvider;
   let logger: Logger;
-  let tool: ReturnType<typeof createTool>;
+  let tool: ReturnType<typeof mcp.toolFactories.messageMoveToTrash>;
   let wrappedTool: ReturnType<Awaited<ReturnType<typeof createMiddlewareContext>>['middleware']['withToolAuth']>;
   let handler: TypedHandler<Input>;
   let sharedGraph: Client;
@@ -27,7 +28,7 @@ describe('outlook-message-move-to-trash', () => {
     auth = middlewareContext.auth;
     logger = middlewareContext.logger;
     const middleware = middlewareContext.middleware;
-    tool = createTool();
+    tool = mcp.toolFactories.messageMoveToTrash();
     wrappedTool = middleware.withToolAuth(tool);
     handler = wrappedTool.handler as TypedHandler<Input>;
     sharedGraph = await Client.initWithMiddleware({ authProvider: auth });

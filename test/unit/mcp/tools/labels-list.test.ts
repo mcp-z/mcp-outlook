@@ -1,9 +1,10 @@
+import { mcp } from '@mcp-z/mcp-outlook';
 import type { Logger, MicrosoftAuthProvider } from '@mcp-z/oauth-microsoft';
 import { Client } from '@microsoft/microsoft-graph-client';
 import assert from 'assert';
 import type { ZodTypeAny } from 'zod';
-import categoriesFactory, { type Output as CategoriesOutput } from '../../../../src/mcp/tools/categories-list.ts';
-import createTool, { type Input, type Output } from '../../../../src/mcp/tools/labels-list.ts';
+import type { Output as CategoriesOutput } from '../../../../src/mcp/tools/categories-list.ts';
+import type { Input, Output } from '../../../../src/mcp/tools/labels-list.ts';
 import { assertSuccess } from '../../../lib/assertions.ts';
 import { createTestCategory, deleteTestCategory } from '../../../lib/category-helpers.ts';
 import { createExtra, type TypedHandler } from '../../../lib/create-extra.ts';
@@ -19,7 +20,7 @@ type ItemWithId = { id?: string; [key: string]: unknown };
 describe('outlook-labels-list tool', () => {
   let auth: MicrosoftAuthProvider;
   let logger: Logger;
-  let tool: ReturnType<typeof createTool>;
+  let tool: ReturnType<typeof mcp.toolFactories.labelsList>;
   let wrappedTool: ReturnType<Awaited<ReturnType<typeof createMiddlewareContext>>['middleware']['withToolAuth']>;
   let handler: TypedHandler<Input>;
   let middleware: Awaited<ReturnType<typeof createMiddlewareContext>>['middleware'];
@@ -30,7 +31,7 @@ describe('outlook-labels-list tool', () => {
     auth = middlewareContext.auth;
     logger = middlewareContext.logger;
     middleware = middlewareContext.middleware;
-    tool = createTool();
+    tool = mcp.toolFactories.labelsList();
     wrappedTool = middleware.withToolAuth(tool);
     handler = wrappedTool.handler as TypedHandler<Input>;
     graph = await Client.initWithMiddleware({ authProvider: auth });
@@ -112,7 +113,7 @@ describe('outlook-labels-list tool', () => {
 
       // Get results from both tools
       const labelsResult = await handler({}, createExtra());
-      const rawCategoriesTool = categoriesFactory();
+      const rawCategoriesTool = mcp.toolFactories.categoriesList();
       const categoriesTool = middleware.withToolAuth(rawCategoriesTool);
       const categoriesResult = await categoriesTool.handler({}, createExtra());
 

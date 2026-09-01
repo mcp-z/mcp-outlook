@@ -1,7 +1,8 @@
+import { mcp } from '@mcp-z/mcp-outlook';
 import type { Logger, MicrosoftAuthProvider } from '@mcp-z/oauth-microsoft';
 import { Client } from '@microsoft/microsoft-graph-client';
 import assert from 'assert';
-import createTool, { type Input, type Output } from '../../../../src/mcp/tools/message-mark-read.ts';
+import type { Input, Output } from '../../../../src/mcp/tools/message-mark-read.ts';
 import { createExtra, type TypedHandler } from '../../../lib/create-extra.ts';
 import createMiddlewareContext from '../../../lib/create-middleware-context.ts';
 import { createTestDraftMessage, deleteTestMessage } from '../../../lib/message-helpers.ts';
@@ -19,7 +20,7 @@ describe('outlook-message-mark-read', () => {
     auth = middlewareContext.auth;
     logger = middlewareContext.logger;
     const middleware = middlewareContext.middleware;
-    const tool = createTool();
+    const tool = mcp.toolFactories.messageMarkRead();
     const wrappedTool = middleware.withToolAuth(tool);
     handler = wrappedTool.handler;
     sharedGraph = await Client.initWithMiddleware({ authProvider: auth });

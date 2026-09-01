@@ -1,17 +1,17 @@
+import type { ServerConfig } from '@mcp-z/mcp-outlook';
+import { setup } from '@mcp-z/mcp-outlook';
 import assert from 'assert';
 import { randomUUID } from 'crypto';
 import * as fs from 'fs';
 import { safeRmSync } from 'fs-remove-compat';
 import getPort from 'get-port';
 import * as path from 'path';
-import { createHTTPServer } from '../../src/setup/http.ts';
-import type { ServerConfig } from '../../src/types.ts';
 
-describe('createHTTPServer - transport initialization', () => {
+describe('setup.createHTTPServer - transport initialization', () => {
   // Note: stdio transport tests are skipped because stdio initialization blocks waiting for input.
   // The stdio transport is tested indirectly through integration tests and manual CLI testing.
 
-  const servers: Awaited<ReturnType<typeof createHTTPServer>>[] = [];
+  const servers: Awaited<ReturnType<typeof setup.createHTTPServer>>[] = [];
   let testContextPath: string;
 
   before(async () => {
@@ -53,7 +53,7 @@ describe('createHTTPServer - transport initialization', () => {
       repositoryUrl: 'https://github.com/mcp-z/mcp-outlook',
     };
 
-    const result = await createHTTPServer(config);
+    const result = await setup.createHTTPServer(config);
     servers.push(result);
 
     assert.ok(result.mcpServer, 'MCP server should be initialized');
@@ -77,7 +77,7 @@ describe('createHTTPServer - transport initialization', () => {
       repositoryUrl: 'https://github.com/mcp-z/mcp-outlook',
     };
 
-    const result = await createHTTPServer(config);
+    const result = await setup.createHTTPServer(config);
     servers.push(result);
 
     assert.ok(result.logger, 'Result should have logger');
@@ -102,7 +102,7 @@ describe('createHTTPServer - transport initialization', () => {
       repositoryUrl: 'https://github.com/mcp-z/mcp-outlook',
     };
 
-    const result = await createHTTPServer(config);
+    const result = await setup.createHTTPServer(config);
     servers.push(result);
 
     assert.ok(result.mcpServer, 'Result should have mcpServer');

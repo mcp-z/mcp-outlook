@@ -1,8 +1,9 @@
+import { mcp } from '@mcp-z/mcp-outlook';
 import type { Logger, MicrosoftAuthProvider } from '@mcp-z/oauth-microsoft';
 import { Client } from '@microsoft/microsoft-graph-client';
 import type { CallToolResult } from '@modelcontextprotocol/sdk/types.js';
 import assert from 'assert';
-import createTool, { type Input, type Output } from '../../../../src/mcp/tools/message-send.ts';
+import type { Input, Output } from '../../../../src/mcp/tools/message-send.ts';
 import { createExtra, type TypedHandler } from '../../../lib/create-extra.ts';
 import createMiddlewareContext from '../../../lib/create-middleware-context.ts';
 import { deleteTestMessage } from '../../../lib/message-helpers.ts';
@@ -13,7 +14,7 @@ type SchemaLike = { parse: (data: unknown) => unknown };
 // Shared instances for all tests
 let auth: MicrosoftAuthProvider;
 let logger: Logger;
-let tool: ReturnType<typeof createTool>;
+let tool: ReturnType<typeof mcp.toolFactories.messageSend>;
 let wrappedTool: ReturnType<Awaited<ReturnType<typeof createMiddlewareContext>>['middleware']['withToolAuth']>;
 let handler: TypedHandler<Input>;
 let sharedGraphClient: Client;
@@ -24,7 +25,7 @@ before(async () => {
   auth = middlewareContext.auth;
   logger = middlewareContext.logger;
   const middleware = middlewareContext.middleware;
-  tool = createTool();
+  tool = mcp.toolFactories.messageSend();
   wrappedTool = middleware.withToolAuth(tool);
   handler = wrappedTool.handler as TypedHandler<Input>;
   sharedGraphClient = Client.initWithMiddleware({ authProvider: auth });
