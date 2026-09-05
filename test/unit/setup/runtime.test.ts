@@ -1,8 +1,8 @@
+import type { ServerConfig } from '@mcp-z/mcp-outlook';
+import { setup } from '@mcp-z/mcp-outlook';
 import assert from 'assert';
-import { validateStorageConfig } from '../../../src/setup/runtime.ts';
-import type { ServerConfig } from '../../../src/types.ts';
 
-describe('validateStorageConfig (outlook)', () => {
+describe('setup.validateStorageConfig (outlook)', () => {
   // TODO: Add exhaustive DCR matrix tests for tool filtering and /files gating.
   it('warns and skips validation in DCR when resourceStoreUri is set', () => {
     const warnings: string[] = [];
@@ -27,7 +27,7 @@ describe('validateStorageConfig (outlook)', () => {
       repositoryUrl: 'https://github.com/mcp-z/mcp-outlook',
     };
 
-    validateStorageConfig(config, logger);
+    setup.validateStorageConfig(config, logger);
 
     assert.strictEqual(warnings.length, 1);
     assert.ok(warnings[0]?.includes('resourceStoreUri'));
@@ -56,7 +56,7 @@ describe('validateStorageConfig (outlook)', () => {
       repositoryUrl: 'https://github.com/mcp-z/mcp-outlook',
     };
 
-    validateStorageConfig(config, logger);
+    setup.validateStorageConfig(config, logger);
 
     assert.strictEqual(warnings.length, 0);
   });
@@ -83,7 +83,7 @@ describe('validateStorageConfig (outlook)', () => {
       repositoryUrl: 'https://github.com/mcp-z/mcp-outlook',
     };
 
-    assert.throws(() => validateStorageConfig(config, logger), {
+    assert.throws(() => setup.validateStorageConfig(config, logger), {
       message: 'outlook-messages-export-csv: Server configuration missing resourceStoreUri.',
     });
   });
@@ -110,7 +110,7 @@ describe('validateStorageConfig (outlook)', () => {
       repositoryUrl: 'https://github.com/mcp-z/mcp-outlook',
     };
 
-    assert.throws(() => validateStorageConfig(config, logger), {
+    assert.throws(() => setup.validateStorageConfig(config, logger), {
       message: 'outlook-messages-export-csv: HTTP transport requires either baseUrl in server config or port in transport config. This is a server configuration error - please provide --base-url or --port.',
     });
   });

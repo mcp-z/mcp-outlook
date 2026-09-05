@@ -1,7 +1,8 @@
+import { mcp } from '@mcp-z/mcp-outlook';
 import type { Logger, MicrosoftAuthProvider } from '@mcp-z/oauth-microsoft';
 import { Client } from '@microsoft/microsoft-graph-client';
 import assert from 'assert';
-import createTool, { type Input, type Output } from '../../../../src/mcp/tools/categories-list.ts';
+import type { Input, Output } from '../../../../src/mcp/tools/categories-list.ts';
 import { createTestCategory, deleteTestCategory } from '../../../lib/category-helpers.ts';
 import { createExtra, type TypedHandler } from '../../../lib/create-extra.ts';
 import createMiddlewareContext from '../../../lib/create-middleware-context.ts';
@@ -13,7 +14,7 @@ type ItemWithId = { id?: string; [key: string]: unknown };
 describe('outlook-categories-list tool', () => {
   let auth: MicrosoftAuthProvider;
   let logger: Logger;
-  let tool: ReturnType<typeof createTool>;
+  let tool: ReturnType<typeof mcp.toolFactories.categoriesList>;
   let wrappedTool: ReturnType<Awaited<ReturnType<typeof createMiddlewareContext>>['middleware']['withToolAuth']>;
   let handler: TypedHandler<Input>;
   let graph: Client;
@@ -23,7 +24,7 @@ describe('outlook-categories-list tool', () => {
     auth = middlewareContext.auth;
     logger = middlewareContext.logger;
     const middleware = middlewareContext.middleware;
-    tool = createTool();
+    tool = mcp.toolFactories.categoriesList();
     wrappedTool = middleware.withToolAuth(tool);
     handler = wrappedTool.handler as TypedHandler<Input>;
     graph = await Client.initWithMiddleware({ authProvider: auth });

@@ -1,8 +1,9 @@
+import { mcp } from '@mcp-z/mcp-outlook';
 import type { Logger, MicrosoftAuthProvider } from '@mcp-z/oauth-microsoft';
 import { Client } from '@microsoft/microsoft-graph-client';
 import assert from 'assert';
-import messageGetFactory, { type Output as MessageGetOutput } from '../../../../src/mcp/tools/message-get.ts';
-import createTool, { type Input, type Output } from '../../../../src/mcp/tools/message-search.ts';
+import type { Output as MessageGetOutput } from '../../../../src/mcp/tools/message-get.ts';
+import type { Input, Output } from '../../../../src/mcp/tools/message-search.ts';
 import { assertObjectsShape, assertSuccess } from '../../../lib/assertions.ts';
 import { createExtra, type TypedHandler } from '../../../lib/create-extra.ts';
 import createMiddlewareContext from '../../../lib/create-middleware-context.ts';
@@ -30,7 +31,7 @@ describe('message_search', () => {
   // Shared instances for all tests
   let auth: MicrosoftAuthProvider;
   let logger: Logger;
-  let tool: ReturnType<typeof createTool>;
+  let tool: ReturnType<typeof mcp.toolFactories.messageSearch>;
   let wrappedTool: ReturnType<Awaited<ReturnType<typeof createMiddlewareContext>>['middleware']['withToolAuth']>;
   let handler: TypedHandler<Input>;
   let middleware: Awaited<ReturnType<typeof createMiddlewareContext>>['middleware'];
@@ -42,7 +43,7 @@ describe('message_search', () => {
     auth = middlewareContext.auth;
     logger = middlewareContext.logger;
     middleware = middlewareContext.middleware;
-    tool = createTool();
+    tool = mcp.toolFactories.messageSearch();
     wrappedTool = middleware.withToolAuth(tool);
     handler = wrappedTool.handler as TypedHandler<Input>;
     sharedGraph = await Client.initWithMiddleware({ authProvider: auth });
@@ -610,7 +611,7 @@ describe('message_search', () => {
   describe('integration scenarios with includeData', () => {
     it('message-search and message-get consistency with includeData modes', async () => {
       // Use message-get handler for cross-tool consistency testing
-      const rawMessageGetTool = messageGetFactory();
+      const rawMessageGetTool = mcp.toolFactories.messageGet();
       const messageGetTool = middleware.withToolAuth(rawMessageGetTool);
       const messageGetHandler = messageGetTool.handler;
 
@@ -875,7 +876,7 @@ describe('message_search', () => {
       const middleware = middlewareContext.middleware;
       const auth = middlewareContext.auth;
       comprehensiveLogger = middlewareContext.logger;
-      const tool = createTool();
+      const tool = mcp.toolFactories.messageSearch();
       const wrappedTool = middleware.withToolAuth(tool);
       comprehensiveMessageSearchHandler = wrappedTool.handler;
       comprehensiveTestGraph = await Client.initWithMiddleware({

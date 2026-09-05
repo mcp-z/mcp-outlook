@@ -1,7 +1,8 @@
+import { mcp } from '@mcp-z/mcp-outlook';
 import type { Logger, MicrosoftAuthProvider } from '@mcp-z/oauth-microsoft';
 import { Client } from '@microsoft/microsoft-graph-client';
 import assert from 'assert';
-import createTool, { type Input, type Output } from '../../../../src/mcp/tools/label-delete.ts';
+import type { Input, Output } from '../../../../src/mcp/tools/label-delete.ts';
 import { categoryExists, createTestCategory, deleteTestCategory, waitForCategoryDeleted } from '../../../lib/category-helpers.ts';
 import { createExtra, type TypedHandler } from '../../../lib/create-extra.ts';
 import createMiddlewareContext from '../../../lib/create-middleware-context.ts';
@@ -24,7 +25,7 @@ describe('outlook-label-delete', () => {
     logger = middlewareContext.logger;
     const middleware = middlewareContext.middleware;
     sharedGraph = await Client.initWithMiddleware({ authProvider: auth });
-    const tool = createTool();
+    const tool = mcp.toolFactories.labelDelete();
     const wrappedTool = middleware.withToolAuth(tool);
     handler = wrappedTool.handler as TypedHandler<Input>;
   });

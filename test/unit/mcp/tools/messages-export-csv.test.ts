@@ -1,10 +1,11 @@
+import type { StorageContext, StorageExtra } from '@mcp-z/mcp-outlook';
+import { mcp } from '@mcp-z/mcp-outlook';
 import type { EnrichedExtra, Logger } from '@mcp-z/oauth-microsoft';
 import assert from 'assert';
 import { existsSync } from 'fs';
 import { mkdir, readFile, rm } from 'fs/promises';
 import * as path from 'path';
-import createTool, { type Input, type Output } from '../../../../src/mcp/tools/messages-export-csv.ts';
-import type { StorageContext, StorageExtra } from '../../../../src/types.ts';
+import type { Input, Output } from '../../../../src/mcp/tools/messages-export-csv.ts';
 import { createExtra, type TypedHandler } from '../../../lib/create-extra.ts';
 import createMiddlewareContext from '../../../lib/create-middleware-context.ts';
 
@@ -64,7 +65,7 @@ describe('Outlook messages export CSV tool (directory creation)', () => {
     const middlewareContext = await createMiddlewareContext();
     const middleware = middlewareContext.middleware;
 
-    const tool = createTool();
+    const tool = mcp.toolFactories.messagesExportCsv();
     const wrappedTool = middleware.withToolAuth(tool);
     exportCsvHandler = wrappedTool.handler as TypedHandler<Input>;
 
@@ -168,7 +169,7 @@ describe('Outlook messages export CSV tool (directory creation)', () => {
     const middlewareContext = await createMiddlewareContext();
     logger = middlewareContext.logger;
     const middleware = middlewareContext.middleware;
-    const tool = createTool();
+    const tool = mcp.toolFactories.messagesExportCsv();
     const wrappedTool = middleware.withToolAuth(tool);
     const nestedHandler = wrappedTool.handler;
 
