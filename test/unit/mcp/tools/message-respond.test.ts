@@ -1,5 +1,6 @@
+import { mcp } from '@mcp-z/mcp-outlook';
 import assert from 'assert';
-import createTool, { type Input } from '../../../../src/mcp/tools/message-respond.ts';
+import type { Input } from '../../../../src/mcp/tools/message-respond.ts';
 import { createExtra, type TypedHandler } from '../../../lib/create-extra.ts';
 import createMiddlewareContext from '../../../lib/create-middleware-context.ts';
 
@@ -10,7 +11,7 @@ describe('outlook-message-respond', () => {
   before(async () => {
     const middlewareContext = await createMiddlewareContext();
     const middleware = middlewareContext.middleware;
-    const tool = createTool();
+    const tool = mcp.toolFactories.messageRespond();
     const wrappedTool = middleware.withToolAuth(tool);
     handler = wrappedTool.handler as TypedHandler<Input>;
   });

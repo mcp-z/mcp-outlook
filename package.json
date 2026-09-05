@@ -71,7 +71,7 @@
     "@mcp-z/email": "^1.0.0",
     "@mcp-z/oauth": "^1.0.5",
     "@mcp-z/oauth-microsoft": "^1.0.9",
-    "@mcp-z/server": "^1.0.0",
+    "@mcp-z/server": "^1.2.0",
     "@microsoft/microsoft-graph-client": "^3.0.0",
     "@microsoft/microsoft-graph-types": "^2.0.0",
     "@modelcontextprotocol/sdk": "^1.0.0",
@@ -100,12 +100,6 @@
   },
   "engines": {
     "node": ">=20"
-  },
-  "allowScripts": {
-    "node-filename-to-dist-paths": true,
-    "node-semvers": true,
-    "node-version-use": true,
-    "thread-sleep-compat": true
   },
   "mcpName": "io.github.mcp-z/mcp-outlook",
   "tsds": {

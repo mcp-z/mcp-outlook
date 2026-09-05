@@ -1,6 +1,6 @@
+import type { OutlookSystemCategory } from '@mcp-z/mcp-outlook';
 import assert from 'assert';
 import { toGraphFilter, toOutlookFilter } from '../../../../src/email/querying/query-builder.ts';
-import type { OutlookSystemCategory } from '../../../../src/schemas/outlook-query-schema.ts';
 
 describe('toGraphFilter - basic field queries', () => {
   it('handles from field with email address', () => {

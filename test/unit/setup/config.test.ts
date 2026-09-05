@@ -1,7 +1,7 @@
+import { setup } from '@mcp-z/mcp-outlook';
 import assert from 'assert';
-import { parseConfig } from '../../src/setup/config.ts';
 
-describe('parseConfig', () => {
+describe('setup.parseConfig', () => {
   const baseEnv = {
     MS_CLIENT_ID: 'test-client-id',
     MS_TENANT_ID: 'common',
@@ -14,7 +14,7 @@ describe('parseConfig', () => {
         MS_CLIENT_SECRET: 'test-client-secret',
       };
 
-      const config = parseConfig([], env);
+      const config = setup.parseConfig([], env);
 
       assert.strictEqual(config.clientId, 'test-client-id');
       assert.strictEqual(config.clientSecret, 'test-client-secret');
@@ -23,7 +23,7 @@ describe('parseConfig', () => {
     });
 
     it('parses config with optional client secret omitted', () => {
-      const config = parseConfig([], baseEnv);
+      const config = setup.parseConfig([], baseEnv);
 
       assert.strictEqual(config.clientId, 'test-client-id');
       assert.strictEqual(config.clientSecret, undefined);
@@ -33,14 +33,14 @@ describe('parseConfig', () => {
 
   describe('Authentication modes', () => {
     it('parses --auth=loopback-oauth', () => {
-      const config = parseConfig(['--auth=loopback-oauth'], baseEnv);
+      const config = setup.parseConfig(['--auth=loopback-oauth'], baseEnv);
 
       assert.strictEqual(config.auth, 'loopback-oauth');
       assert.strictEqual(config.dcrConfig, undefined);
     });
 
     it('parses --auth=device-code', () => {
-      const config = parseConfig(['--auth=device-code'], baseEnv);
+      const config = setup.parseConfig(['--auth=device-code'], baseEnv);
 
       assert.strictEqual(config.auth, 'device-code');
       assert.strictEqual(config.dcrConfig, undefined);
@@ -56,7 +56,7 @@ describe('parseConfig', () => {
           DCR_STORE_URI: 'file://.dcr.json',
         };
 
-        const config = parseConfig(['--auth=dcr'], env);
+        const config = setup.parseConfig(['--auth=dcr'], env);
 
         assert.strictEqual(config.auth, 'dcr');
         assert.ok(config.dcrConfig);
@@ -72,7 +72,7 @@ describe('parseConfig', () => {
           ...baseEnv,
         };
 
-        const config = parseConfig(['--auth=dcr', '--dcr-store-uri=file://custom-path/store.json'], env);
+        const config = setup.parseConfig(['--auth=dcr', '--dcr-store-uri=file://custom-path/store.json'], env);
 
         assert.strictEqual(config.auth, 'dcr');
         assert.ok(config.dcrConfig);
@@ -89,7 +89,7 @@ describe('parseConfig', () => {
           DCR_VERIFY_URL: 'https://auth.example.com/oauth/verify',
         };
 
-        const config = parseConfig(['--auth=dcr'], env);
+        const config = setup.parseConfig(['--auth=dcr'], env);
 
         assert.strictEqual(config.auth, 'dcr');
         assert.ok(config.dcrConfig);
@@ -106,7 +106,7 @@ describe('parseConfig', () => {
           DCR_VERIFY_URL: 'https://auth.example.com/oauth/verify',
         };
 
-        const config = parseConfig(['--auth=dcr', '--dcr-mode=external'], env);
+        const config = setup.parseConfig(['--auth=dcr', '--dcr-mode=external'], env);
 
         assert.strictEqual(config.auth, 'dcr');
         assert.ok(config.dcrConfig);
@@ -120,7 +120,7 @@ describe('parseConfig', () => {
           DCR_MODE: 'external',
         };
 
-        const config = parseConfig(['--auth=dcr', '--dcr-verify-url=https://new.example.com/verify'], env);
+        const config = setup.parseConfig(['--auth=dcr', '--dcr-verify-url=https://new.example.com/verify'], env);
 
         assert.strictEqual(config.auth, 'dcr');
         assert.ok(config.dcrConfig);
@@ -134,7 +134,7 @@ describe('parseConfig', () => {
           DCR_MODE: 'external',
         };
 
-        assert.throws(() => parseConfig(['--auth=dcr'], env), {
+        assert.throws(() => setup.parseConfig(['--auth=dcr'], env), {
           name: 'Error',
           message: 'DCR external mode requires --dcr-verify-url or DCR_VERIFY_URL environment variable',
         });
@@ -148,7 +148,7 @@ describe('parseConfig', () => {
           DCR_STORE_URI: 'file://.dcr.json',
         };
 
-        const config = parseConfig(['--auth=dcr'], env);
+        const config = setup.parseConfig(['--auth=dcr'], env);
 
         assert.strictEqual(config.auth, 'dcr');
         assert.ok(config.dcrConfig);
@@ -166,7 +166,7 @@ describe('parseConfig', () => {
           DCR_VERIFY_URL: 'https://auth.example.com/oauth/verify',
         };
 
-        const config = parseConfig(['--auth=dcr', '--dcr-mode=external'], env);
+        const config = setup.parseConfig(['--auth=dcr', '--dcr-mode=external'], env);
 
         assert.strictEqual(config.auth, 'dcr');
         assert.ok(config.dcrConfig);
@@ -181,7 +181,7 @@ describe('parseConfig', () => {
           DCR_VERIFY_URL: 'https://old.example.com/verify',
         };
 
-        const config = parseConfig(['--auth=dcr', '--dcr-verify-url=https://new.example.com/verify'], env);
+        const config = setup.parseConfig(['--auth=dcr', '--dcr-verify-url=https://new.example.com/verify'], env);
 
         assert.strictEqual(config.auth, 'dcr');
         assert.ok(config.dcrConfig);
@@ -195,7 +195,7 @@ describe('parseConfig', () => {
           DCR_STORE_URI: 'file://old-path/store.json',
         };
 
-        const config = parseConfig(['--auth=dcr', '--dcr-store-uri=file://new-path/store.json'], env);
+        const config = setup.parseConfig(['--auth=dcr', '--dcr-store-uri=file://new-path/store.json'], env);
 
         assert.strictEqual(config.auth, 'dcr');
         assert.ok(config.dcrConfig);
@@ -209,7 +209,7 @@ describe('parseConfig', () => {
           ...baseEnv,
         };
 
-        assert.throws(() => parseConfig(['--auth=dcr', '--dcr-mode=invalid'], env), {
+        assert.throws(() => setup.parseConfig(['--auth=dcr', '--dcr-mode=invalid'], env), {
           name: 'Error',
           message: 'Invalid --dcr-mode value: "invalid". Valid values: self-hosted, external',
         });
@@ -221,7 +221,7 @@ describe('parseConfig', () => {
           DCR_MODE: 'invalid',
         };
 
-        assert.throws(() => parseConfig(['--auth=dcr'], env), {
+        assert.throws(() => setup.parseConfig(['--auth=dcr'], env), {
           name: 'Error',
           message: 'Invalid --dcr-mode value: "invalid". Valid values: self-hosted, external',
         });
@@ -231,7 +231,7 @@ describe('parseConfig', () => {
 
   describe('Server configuration', () => {
     it('includes server metadata', () => {
-      const config = parseConfig([], baseEnv);
+      const config = setup.parseConfig([], baseEnv);
 
       assert.ok(config.name);
       assert.ok(config.version);
@@ -241,17 +241,155 @@ describe('parseConfig', () => {
     });
 
     it('parses transport configuration', () => {
-      const config = parseConfig([], baseEnv);
+      const config = setup.parseConfig([], baseEnv);
 
       assert.ok(config.transport);
       assert.strictEqual(config.transport.type, 'stdio');
     });
 
     it('parses --port for HTTP transport', () => {
-      const config = parseConfig(['--port=3456'], baseEnv);
+      const config = setup.parseConfig(['--port=3456'], baseEnv);
 
       assert.strictEqual(config.transport.type, 'http');
       assert.strictEqual(config.transport.port, 3456);
     });
+  });
+
+  it('defaults to stdio transport with no args or env', () => {
+    const config = setup.parseConfig([], baseEnv);
+
+    assert.strictEqual(config.transport.type, 'stdio');
+  });
+
+  it('defaults headless to true for tests', () => {
+    const env = {
+      ...baseEnv,
+      HEADLESS: 'true', // Explicit HEADLESS env var (no NODE_ENV magic)
+    };
+
+    const config = setup.parseConfig([], env);
+
+    assert.strictEqual(config.headless, true);
+  });
+
+  it('uses --headless CLI arg to override env var', () => {
+    const env = {
+      ...baseEnv,
+      HEADLESS: 'false', // Env says false, but CLI arg overrides
+    };
+
+    const config = setup.parseConfig(['--headless'], env);
+
+    // CLI arg --headless should override HEADLESS env var
+    assert.strictEqual(config.headless, true);
+  });
+
+  it('parses config from env object parameter', () => {
+    const testEnv = {
+      MS_CLIENT_ID: 'test-client-id',
+      MS_CLIENT_SECRET: 'test-client-secret',
+      MS_TENANT_ID: 'test-tenant-id',
+    };
+
+    const config = setup.parseConfig([], testEnv);
+
+    assert.strictEqual(config.clientId, 'test-client-id');
+    assert.strictEqual(config.tenantId, 'test-tenant-id');
+  });
+
+  it('uses empty array for args when args parameter is undefined', () => {
+    const config = setup.parseConfig([], baseEnv);
+
+    // Should parse successfully without CLI args
+    assert.strictEqual(config.transport.type, 'stdio');
+  });
+
+  it('parses HTTP port from env in test config', () => {
+    const testPort = 5568; // Explicit test port
+    const env = {
+      ...baseEnv,
+      PORT: testPort.toString(),
+    };
+
+    const config = setup.parseConfig([], env);
+
+    assert.strictEqual(config.transport.type, 'http');
+    assert.strictEqual(config.transport.port, testPort);
+    // redirectUri is only set when explicitly provided via --redirect-uri
+    assert.strictEqual(config.redirectUri, undefined);
+  });
+
+  it('parses HTTP port from CLI --port flag (overrides env)', () => {
+    const envPort = 5568;
+    const cliPort = 5569;
+    const env = {
+      ...baseEnv,
+      PORT: envPort.toString(), // Env var should be overridden by CLI flag
+    };
+
+    const config = setup.parseConfig([`--port=${cliPort}`], env);
+
+    assert.strictEqual(config.transport.type, 'http');
+    assert.strictEqual(config.transport.port, cliPort); // CLI flag wins
+    // redirectUri is only set when explicitly provided via --redirect-uri
+    assert.strictEqual(config.redirectUri, undefined);
+  });
+
+  it('parses --redirect-uri when explicitly provided', () => {
+    const config = setup.parseConfig(['--redirect-uri=https://example.com/callback'], baseEnv);
+
+    assert.strictEqual(config.redirectUri, 'https://example.com/callback');
+  });
+
+  it('parses --stdio explicitly', () => {
+    const config = setup.parseConfig(['--stdio'], baseEnv);
+
+    assert.strictEqual(config.transport.type, 'stdio');
+  });
+
+  it('defaults to loopback-oauth auth mode', () => {
+    const config = setup.parseConfig([], baseEnv);
+
+    assert.strictEqual(config.auth, 'loopback-oauth');
+  });
+
+  it('defaults to loopback-oauth auth mode', () => {
+    const config = setup.parseConfig([], baseEnv);
+
+    assert.strictEqual(config.auth, 'loopback-oauth');
+  });
+
+  it('defaults logLevel to info', () => {
+    const config = setup.parseConfig([], baseEnv);
+
+    assert.strictEqual(config.logLevel, 'info');
+  });
+
+  it('parses LOG_LEVEL from env', () => {
+    const env = {
+      ...baseEnv,
+      LOG_LEVEL: 'debug',
+    };
+
+    const config = setup.parseConfig([], env);
+
+    assert.strictEqual(config.logLevel, 'debug');
+  });
+
+  it('parses --log-level from CLI', () => {
+    const config = setup.parseConfig(['--log-level=error'], baseEnv);
+
+    assert.strictEqual(config.logLevel, 'error');
+  });
+
+  it('CLI --log-level overrides LOG_LEVEL env var', () => {
+    const env = {
+      ...baseEnv,
+      LOG_LEVEL: 'debug',
+    };
+
+    const config = setup.parseConfig(['--log-level=warn'], env);
+
+    assert.strictEqual(config.logLevel, 'warn');
   });
 });
