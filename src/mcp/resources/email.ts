@@ -1,11 +1,9 @@
 import { normalizeDateToISO as toIsoUtc } from '@mcp-z/email';
 import type { EnrichedExtra } from '@mcp-z/oauth-microsoft';
-import type { ResourceConfig, ResourceModule } from '@mcp-z/server';
+import type { ReadResourceResult, ResourceConfig, ResourceModule, ServerContext } from '@mcp-z/server';
+import { ResourceTemplate } from '@mcp-z/server';
 import { Client } from '@microsoft/microsoft-graph-client';
 import type * as MicrosoftGraph from '@microsoft/microsoft-graph-types';
-import { ResourceTemplate } from '@modelcontextprotocol/sdk/server/mcp.js';
-import type { RequestHandlerExtra } from '@modelcontextprotocol/sdk/shared/protocol.js';
-import type { ReadResourceResult, ServerNotification, ServerRequest } from '@modelcontextprotocol/sdk/types.js';
 
 export default function createResource() {
   const template = new ResourceTemplate('outlook://messages/{id}', {
@@ -16,7 +14,7 @@ export default function createResource() {
     mimeType: 'application/json',
   };
 
-  const handler = async (uri: URL, variables: { id: string }, extra: RequestHandlerExtra<ServerRequest, ServerNotification>): Promise<ReadResourceResult> => {
+  const handler = async (uri: URL, variables: { id: string }, extra: ServerContext): Promise<ReadResourceResult> => {
     try {
       const { logger, authContext } = extra as unknown as EnrichedExtra;
 

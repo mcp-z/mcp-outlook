@@ -4,8 +4,8 @@ import { schemas } from '@mcp-z/oauth-microsoft';
 const { AuthRequiredBranchSchema } = schemas;
 
 import type { ToolModule } from '@mcp-z/server';
+import { type CallToolResult, ProtocolError, ProtocolErrorCode } from '@mcp-z/server';
 import { Client } from '@microsoft/microsoft-graph-client';
-import { type CallToolResult, ErrorCode, McpError } from '@modelcontextprotocol/sdk/types.js';
 import { z } from 'zod';
 
 const SuccessSchema = z.object({
@@ -42,7 +42,7 @@ async function handler({ id }: Input, extra: EnrichedExtra): Promise<CallToolRes
 
   if (!id) {
     logger.info('outlook-message-mark-read missing id');
-    throw new McpError(ErrorCode.InvalidParams, 'Missing id');
+    throw new ProtocolError(ProtocolErrorCode.InvalidParams, 'Missing id');
   }
 
   try {
@@ -70,7 +70,7 @@ async function handler({ id }: Input, extra: EnrichedExtra): Promise<CallToolRes
     const message = error instanceof Error ? error.message : String(error);
     logger.error('outlook-message-mark-read error', { error: message });
 
-    throw new McpError(ErrorCode.InternalError, `Error marking message as read: ${message}`, {
+    throw new ProtocolError(ProtocolErrorCode.InternalError, `Error marking message as read: ${message}`, {
       stack: error instanceof Error ? error.stack : undefined,
     });
   }

@@ -55,7 +55,7 @@ describe('outlook-labels-list tool', () => {
       assert.fail(`structuredContent failed schema validation: ${message}`);
     }
 
-    const result = res.structuredContent?.result as Output | undefined;
+    const result = (res.structuredContent as { result?: unknown } | undefined)?.result as Output | undefined;
     assertSuccess(result, 'labels list response');
 
     // Validate success response structure
@@ -118,8 +118,8 @@ describe('outlook-labels-list tool', () => {
       const categoriesResult = await categoriesTool.handler({}, createExtra());
 
       // Extract structured content
-      const labelsPayload = labelsResult.structuredContent?.result as Output | undefined;
-      const categoriesPayload = categoriesResult.structuredContent?.result as CategoriesOutput | undefined;
+      const labelsPayload = (labelsResult.structuredContent as { result?: unknown } | undefined)?.result as Output | undefined;
+      const categoriesPayload = (categoriesResult.structuredContent as { result?: unknown } | undefined)?.result as CategoriesOutput | undefined;
 
       assert.ok(labelsPayload, 'labels result should have structuredContent');
       assert.ok(categoriesPayload, 'categories result should have structuredContent');

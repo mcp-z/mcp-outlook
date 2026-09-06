@@ -4,10 +4,9 @@ import { schemas } from '@mcp-z/oauth-microsoft';
 
 const { AuthRequiredBranchSchema } = schemas;
 
-import { createFieldsSchema, filterFields, parseFields, type ToolModule } from '@mcp-z/server';
+import { type CallToolResult, createFieldsSchema, filterFields, ProtocolError, ProtocolErrorCode, parseFields, type ToolModule } from '@mcp-z/server';
 import { Client } from '@microsoft/microsoft-graph-client';
 import type * as MicrosoftGraph from '@microsoft/microsoft-graph-types';
-import { type CallToolResult, ErrorCode, McpError } from '@modelcontextprotocol/sdk/types.js';
 import { z } from 'zod';
 
 const inputSchema = z.object({
@@ -51,7 +50,7 @@ async function handler({ id, fields, contentType, excludeThreadHistory }: Input,
 
   if (!id) {
     logger.info('outlook.message.get missing id');
-    throw new McpError(ErrorCode.InvalidParams, 'Missing id');
+    throw new ProtocolError(ProtocolErrorCode.InvalidParams, 'Missing id');
   }
 
   try {
@@ -106,7 +105,7 @@ async function handler({ id, fields, contentType, excludeThreadHistory }: Input,
     const message = error instanceof Error ? error.message : String(error);
     logger.error('outlook.message.get error', { error: message });
 
-    throw new McpError(ErrorCode.InternalError, `Error getting message: ${message}`, {
+    throw new ProtocolError(ProtocolErrorCode.InternalError, `Error getting message: ${message}`, {
       stack: error instanceof Error ? error.stack : undefined,
     });
   }

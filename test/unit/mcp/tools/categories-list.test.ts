@@ -55,7 +55,7 @@ describe('outlook-categories-list tool', () => {
       assert.ok(res && Array.isArray(res.content), 'categories_list did not return content array');
       assert.ok(res.structuredContent && res.structuredContent, 'missing structuredContent');
 
-      const branch = res.structuredContent?.result as Output | undefined;
+      const branch = (res.structuredContent as { result?: unknown } | undefined)?.result as Output | undefined;
 
       if (branch?.type === 'success') {
         // 5. Validate SPECIFIC categories are found in the list

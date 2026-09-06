@@ -4,8 +4,8 @@ import { schemas } from '@mcp-z/oauth-microsoft';
 const { AuthRequiredBranchSchema } = schemas;
 
 import type { ToolModule } from '@mcp-z/server';
+import { type CallToolResult, ProtocolError, ProtocolErrorCode } from '@mcp-z/server';
 import { Client } from '@microsoft/microsoft-graph-client';
-import { type CallToolResult, ErrorCode, McpError } from '@modelcontextprotocol/sdk/types.js';
 import { z } from 'zod';
 
 const LabelResultSchema = z.object({
@@ -67,7 +67,7 @@ async function handler({ id, labels }: Input, extra: EnrichedExtra): Promise<Cal
     const message = error instanceof Error ? error.message : String(error);
     logger.error('outlook.label.add error', { error: message });
 
-    throw new McpError(ErrorCode.InternalError, `Error adding label: ${message}`, {
+    throw new ProtocolError(ProtocolErrorCode.InternalError, `Error adding label: ${message}`, {
       stack: error instanceof Error ? error.stack : undefined,
     });
   }

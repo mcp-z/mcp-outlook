@@ -51,7 +51,7 @@ describe('outlook-label-delete', () => {
       const response = await handler({ ids: [categoryId] }, createExtra());
 
       // Check structured response
-      const structured = response?.structuredContent?.result as Output | undefined;
+      const structured = (response?.structuredContent as { result?: unknown } | undefined)?.result as Output | undefined;
       assert.ok(structured, 'structuredContent missing');
 
       if (structured?.type === 'success') {
@@ -113,7 +113,7 @@ describe('outlook-label-delete', () => {
       const response = await handler({ ids: [categoryId1, categoryId2] }, createExtra());
 
       // Check structured response
-      const structured = response?.structuredContent?.result as Output | undefined;
+      const structured = (response?.structuredContent as { result?: unknown } | undefined)?.result as Output | undefined;
       assert.ok(structured, 'structuredContent missing');
 
       if (structured.type === 'success') {
@@ -162,7 +162,7 @@ describe('outlook-label-delete', () => {
     const response = await handler({ ids: [nonExistentId] }, createExtra());
 
     // Check structured response
-    const structured = response?.structuredContent?.result as Output | undefined;
+    const structured = (response?.structuredContent as { result?: unknown } | undefined)?.result as Output | undefined;
     assert.ok(structured, 'structuredContent missing');
 
     if (structured?.type === 'success') {
@@ -205,7 +205,7 @@ describe('outlook-label-delete', () => {
       );
 
       // Check structured response
-      const structured = response?.structuredContent?.result as Output | undefined;
+      const structured = (response?.structuredContent as { result?: unknown } | undefined)?.result as Output | undefined;
       assert.ok(structured, 'structuredContent missing');
 
       if (structured.type === 'success') {

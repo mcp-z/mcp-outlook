@@ -5,8 +5,8 @@ import { schemas } from '@mcp-z/oauth-microsoft';
 const { AuthRequiredBranchSchema } = schemas;
 
 import type { ToolModule } from '@mcp-z/server';
+import { type CallToolResult, ProtocolError, ProtocolErrorCode } from '@mcp-z/server';
 import { Client } from '@microsoft/microsoft-graph-client';
-import { type CallToolResult, ErrorCode, McpError } from '@modelcontextprotocol/sdk/types.js';
 import { z } from 'zod';
 
 const SuccessSchema = z.object({
@@ -45,7 +45,7 @@ async function handler({ id, body, contentType }: Input, extra: EnrichedExtra): 
 
   if (!id || !body) {
     logger.info('outlook.respond missing id or body');
-    throw new McpError(ErrorCode.InvalidParams, 'Missing id or body');
+    throw new ProtocolError(ProtocolErrorCode.InvalidParams, 'Missing id or body');
   }
 
   try {
@@ -73,7 +73,7 @@ async function handler({ id, body, contentType }: Input, extra: EnrichedExtra): 
     const message = error instanceof Error ? error.message : String(error);
     logger.error('outlook.respond error', { error: message });
 
-    throw new McpError(ErrorCode.InternalError, `Error replying to message: ${message}`, {
+    throw new ProtocolError(ProtocolErrorCode.InternalError, `Error replying to message: ${message}`, {
       stack: error instanceof Error ? error.stack : undefined,
     });
   }

@@ -1,9 +1,9 @@
 import type { EnrichedExtra } from '@mcp-z/oauth-microsoft';
 import { schemas } from '@mcp-z/oauth-microsoft';
 import type { ToolModule } from '@mcp-z/server';
+import { type CallToolResult, ProtocolError, ProtocolErrorCode } from '@mcp-z/server';
 import { Client } from '@microsoft/microsoft-graph-client';
 import type * as MicrosoftGraph from '@microsoft/microsoft-graph-types';
-import { type CallToolResult, ErrorCode, McpError } from '@modelcontextprotocol/sdk/types.js';
 import { z } from 'zod';
 import { OutlookCategorySchema } from '../../schemas/index.ts';
 
@@ -79,7 +79,7 @@ async function handler(_: Input, extra: EnrichedExtra): Promise<CallToolResult> 
     const message = error instanceof Error ? error.message : String(error);
     logger.error('outlook.labels.list error', { error: message });
 
-    throw new McpError(ErrorCode.InternalError, `Error listing labels: ${message}`, {
+    throw new ProtocolError(ProtocolErrorCode.InternalError, `Error listing labels: ${message}`, {
       stack: error instanceof Error ? error.stack : undefined,
     });
   }

@@ -53,7 +53,7 @@ describe('outlook-message-move-to-trash', () => {
     }
 
     // The structured machine-readable payload is canonical; validate it instead of parsing a JSON mirror in content[0]
-    const structured = res.structuredContent?.result as Output | undefined;
+    const structured = (res.structuredContent as { result?: unknown } | undefined)?.result as Output | undefined;
     assert.ok(structured, 'missing structuredContent');
 
     if (structured?.type === 'success') {
@@ -85,7 +85,7 @@ describe('outlook-message-move-to-trash', () => {
       const trashResp = await handler({ ids: [draftId] }, createExtra());
 
       // Check structured response
-      const structured = trashResp.structuredContent?.result as Output | undefined;
+      const structured = (trashResp.structuredContent as { result?: unknown } | undefined)?.result as Output | undefined;
       assert.ok(structured, 'structuredContent missing');
 
       if (structured?.type === 'success') {
@@ -136,7 +136,7 @@ describe('outlook-message-move-to-trash', () => {
       const trashResp = await handler({ ids: [draftId1, draftId2] }, createExtra());
 
       // Check structured response
-      const structured = trashResp.structuredContent?.result as Output | undefined;
+      const structured = (trashResp.structuredContent as { result?: unknown } | undefined)?.result as Output | undefined;
       assert.ok(structured, 'structuredContent missing');
 
       if (structured?.type === 'success') {
@@ -192,7 +192,7 @@ describe('outlook-message-move-to-trash', () => {
       const trashResp = await handler({ ids: [validId, nonExistentId] }, createExtra());
 
       // Check structured response
-      const structured = trashResp.structuredContent?.result as Output | undefined;
+      const structured = (trashResp.structuredContent as { result?: unknown } | undefined)?.result as Output | undefined;
       assert.ok(structured, 'structuredContent missing');
 
       if (structured?.type === 'success') {

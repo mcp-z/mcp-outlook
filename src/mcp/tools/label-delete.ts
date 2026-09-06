@@ -4,8 +4,8 @@ import { schemas } from '@mcp-z/oauth-microsoft';
 const { AuthRequiredBranchSchema } = schemas;
 
 import type { ToolModule } from '@mcp-z/server';
+import { type CallToolResult, ProtocolError, ProtocolErrorCode } from '@mcp-z/server';
 import { Client } from '@microsoft/microsoft-graph-client';
-import { type CallToolResult, ErrorCode, McpError } from '@modelcontextprotocol/sdk/types.js';
 import { z } from 'zod';
 import { CHUNK_SIZE, MAX_BATCH_SIZE } from '../../constants.ts';
 
@@ -63,7 +63,7 @@ async function handler({ ids }: Input, extra: EnrichedExtra): Promise<CallToolRe
 
   if (invalidIds.length > 0) {
     logger.info('outlook-label-delete found invalid ids', { invalidIds, count: invalidIds.length });
-    throw new McpError(ErrorCode.InvalidParams, `Found ${invalidIds.length} invalid IDs (contain invalid characters): ${invalidIds.join(', ')}`);
+    throw new ProtocolError(ProtocolErrorCode.InvalidParams, `Found ${invalidIds.length} invalid IDs (contain invalid characters): ${invalidIds.join(', ')}`);
   }
 
   try {
@@ -149,7 +149,7 @@ async function handler({ ids }: Input, extra: EnrichedExtra): Promise<CallToolRe
     const message = error instanceof Error ? error.message : String(error);
     logger.error('outlook-label-delete error', { error: message });
 
-    throw new McpError(ErrorCode.InternalError, `Error deleting categories: ${message}`, {
+    throw new ProtocolError(ProtocolErrorCode.InternalError, `Error deleting categories: ${message}`, {
       stack: error instanceof Error ? error.stack : undefined,
     });
   }
