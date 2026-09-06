@@ -14,7 +14,7 @@ export type { AuthMiddleware, OAuthAdapters, OAuthRuntimeDeps } from './setup/oa
 export * from './types.ts';
 
 export async function startServer(config: ServerConfig): Promise<void> {
-  // createHTTPServer/createStdioServer pull in @modelcontextprotocol/sdk and every mcp/tools/*.ts
+  // createHTTPServer/createStdioServer pull in @mcp-z/server and every mcp/tools/*.ts
   // (@microsoft/microsoft-graph-client included); deferred so a --version/--help run never reaches them.
   const { createHTTPServer } = await import('./setup/http.ts');
   const { createStdioServer } = await import('./setup/stdio.ts');

@@ -52,7 +52,7 @@ describe('outlook-message-mark-read', () => {
       assert.ok(res && Array.isArray(res.content), 'mark-read did not return content array');
       assert.ok(res.structuredContent && res.structuredContent, 'missing structuredContent');
 
-      const branch: Output | undefined = res.structuredContent?.result as Output;
+      const branch: Output | undefined = (res.structuredContent as { result?: unknown } | undefined)?.result as Output;
 
       if (branch?.type === 'success') {
         // 6. Verify message is now marked as read (fetch and validate state change)
@@ -70,10 +70,10 @@ describe('outlook-message-mark-read', () => {
   });
 
   it('mark-read returns error for nonexistent message', async () => {
-    // Errors are now thrown as McpError instead of returned as structuredContent
+    // Errors are now thrown as ProtocolError instead of returned as structuredContent
     try {
       await handler({ id: 'non-existent-id' }, createExtra());
-      assert.fail('Expected McpError to be thrown for nonexistent message');
+      assert.fail('Expected ProtocolError to be thrown for nonexistent message');
     } catch (err) {
       assert.ok(err instanceof Error, 'Error should be an Error instance');
       assert.ok(err.message.includes('Error marking message') || err.message.includes('malformed'), 'Error message should indicate marking failure');

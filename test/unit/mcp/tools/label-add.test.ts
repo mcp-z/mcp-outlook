@@ -53,7 +53,7 @@ describe('outlook-label-add', () => {
       assert.ok(res && Array.isArray(res.content), 'add_label did not return content array');
       assert.ok(res.structuredContent && res.structuredContent, 'missing structuredContent');
 
-      const branch = res.structuredContent?.result as Output | undefined;
+      const branch = (res.structuredContent as { result?: unknown } | undefined)?.result as Output | undefined;
 
       if (branch?.type === 'success') {
         // 6. Verify label was ACTUALLY added (fetch message again)

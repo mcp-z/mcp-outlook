@@ -4,8 +4,8 @@ import { schemas } from '@mcp-z/oauth-microsoft';
 const { AuthRequiredBranchSchema } = schemas;
 
 import type { ToolModule } from '@mcp-z/server';
+import { type CallToolResult, ProtocolError, ProtocolErrorCode } from '@mcp-z/server';
 import { Client } from '@microsoft/microsoft-graph-client';
-import { type CallToolResult, ErrorCode, McpError } from '@modelcontextprotocol/sdk/types.js';
 import { z } from 'zod';
 import { CHUNK_SIZE, MAX_BATCH_SIZE } from '../../constants.ts';
 
@@ -53,13 +53,13 @@ async function handler({ ids }: Input, extra: EnrichedExtra): Promise<CallToolRe
 
   if (!ids || ids.length === 0) {
     logger.info('outlook-message-move-to-trash missing ids');
-    throw new McpError(ErrorCode.InvalidParams, 'Missing ids');
+    throw new ProtocolError(ProtocolErrorCode.InvalidParams, 'Missing ids');
   }
 
   // Validate batch size to prevent memory exhaustion
   if (ids.length > MAX_BATCH_SIZE) {
     logger.info('outlook-message-move-to-trash batch size exceeded', { requested: ids.length, max: MAX_BATCH_SIZE });
-    throw new McpError(ErrorCode.InvalidParams, `Batch size ${ids.length} exceeds maximum allowed size of ${MAX_BATCH_SIZE}`);
+    throw new ProtocolError(ProtocolErrorCode.InvalidParams, `Batch size ${ids.length} exceeds maximum allowed size of ${MAX_BATCH_SIZE}`);
   }
 
   // Validate and sanitize IDs
@@ -82,12 +82,12 @@ async function handler({ ids }: Input, extra: EnrichedExtra): Promise<CallToolRe
 
   if (invalidIds.length > 0) {
     logger.info('outlook-message-move-to-trash found invalid ids', { invalidIds, count: invalidIds.length });
-    throw new McpError(ErrorCode.InvalidParams, `Found ${invalidIds.length} invalid IDs: ${invalidIds.join(', ')}`);
+    throw new ProtocolError(ProtocolErrorCode.InvalidParams, `Found ${invalidIds.length} invalid IDs: ${invalidIds.join(', ')}`);
   }
 
   if (validatedIds.length === 0) {
     logger.info('outlook-message-move-to-trash no valid ids after validation');
-    throw new McpError(ErrorCode.InvalidParams, 'No valid IDs found after validation');
+    throw new ProtocolError(ProtocolErrorCode.InvalidParams, 'No valid IDs found after validation');
   }
 
   try {
@@ -169,7 +169,7 @@ async function handler({ ids }: Input, extra: EnrichedExtra): Promise<CallToolRe
     const message = error instanceof Error ? error.message : String(error);
     logger.error('outlook-message-move-to-trash error', { error: message });
 
-    throw new McpError(ErrorCode.InternalError, `Error moving messages to trash: ${message}`, {
+    throw new ProtocolError(ProtocolErrorCode.InternalError, `Error moving messages to trash: ${message}`, {
       stack: error instanceof Error ? error.stack : undefined,
     });
   }

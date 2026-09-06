@@ -69,7 +69,7 @@ describe('message_search', () => {
         createExtra()
       );
 
-      const branch = result.structuredContent?.result as Output | undefined;
+      const branch = (result.structuredContent as { result?: unknown } | undefined)?.result as Output | undefined;
       assertSuccess(branch, 'arrays response');
 
       if (branch.type === 'success') {
@@ -108,7 +108,7 @@ describe('message_search', () => {
       }
 
       // If success, structuredContent.result contains canonical machine payload. Validate items if present.
-      const branch = result.structuredContent?.result as Output | undefined;
+      const branch = (result.structuredContent as { result?: unknown } | undefined)?.result as Output | undefined;
       assertObjectsShape(branch, 'message_search objects shape');
       if (branch.items.length > 0) {
         const item = branch.items[0];
@@ -166,7 +166,7 @@ describe('message_search', () => {
         createExtra()
       );
 
-      const branch = result.structuredContent?.result as Output | undefined;
+      const branch = (result.structuredContent as { result?: unknown } | undefined)?.result as Output | undefined;
       assert.ok(branch && branch.type === 'success', 'expected success result');
       assertObjectsShape(branch, 'expected objects shape');
       const found = branch.items.some((item) => (item as ItemWithId).id === messageId);
@@ -221,9 +221,9 @@ describe('message_search', () => {
       );
 
       // Check if response is error or success
-      // Errors are now thrown as McpError, not returned
+      // Errors are now thrown as ProtocolError, not returned
       if (result) {
-        const branch = result.structuredContent?.result as Output | undefined;
+        const branch = (result.structuredContent as { result?: unknown } | undefined)?.result as Output | undefined;
         try {
           assertObjectsShape(branch, 'should have objects shape');
         } catch {
@@ -275,9 +275,9 @@ describe('message_search', () => {
         createExtra()
       );
 
-      // Errors are now thrown as McpError, not returned
+      // Errors are now thrown as ProtocolError, not returned
       if (result) {
-        const branch = result.structuredContent?.result as Output | undefined;
+        const branch = (result.structuredContent as { result?: unknown } | undefined)?.result as Output | undefined;
         try {
           assertObjectsShape(branch, 'should have objects shape');
         } catch {
@@ -311,9 +311,9 @@ describe('message_search', () => {
         createExtra()
       );
 
-      // Errors are now thrown as McpError, not returned
+      // Errors are now thrown as ProtocolError, not returned
       if (result) {
-        const branch = result.structuredContent?.result as Output | undefined;
+        const branch = (result.structuredContent as { result?: unknown } | undefined)?.result as Output | undefined;
         try {
           assertObjectsShape(branch, 'should have objects shape');
         } catch {
@@ -350,9 +350,9 @@ describe('message_search', () => {
         createExtra()
       );
 
-      const isFirstError = !!firstPage.error || (firstPage.structuredContent && firstPage.structuredContent.error);
+      const isFirstError = !!firstPage.error || (firstPage.structuredContent && (firstPage.structuredContent as { error?: unknown }).error);
       if (!isFirstError) {
-        const firstBranch = firstPage.structuredContent?.result as Output | undefined;
+        const firstBranch = (firstPage.structuredContent as { result?: unknown } | undefined)?.result as Output | undefined;
         try {
           assertObjectsShape(firstBranch, 'first page should have objects shape');
         } catch {
@@ -375,9 +375,9 @@ describe('message_search', () => {
             createExtra()
           );
 
-          const isSecondError = !!secondPage.error || (secondPage.structuredContent && secondPage.structuredContent.error);
+          const isSecondError = !!secondPage.error || (secondPage.structuredContent && (secondPage.structuredContent as { error?: unknown }).error);
           if (!isSecondError) {
-            const secondBranch = secondPage.structuredContent?.result as Output | undefined;
+            const secondBranch = (secondPage.structuredContent as { result?: unknown } | undefined)?.result as Output | undefined;
             try {
               assertObjectsShape(secondBranch, 'second page should have objects shape');
             } catch {
@@ -418,9 +418,9 @@ describe('message_search', () => {
         createExtra()
       );
 
-      const isErrorTrue = !!resultTrue.error || (resultTrue.structuredContent && resultTrue.structuredContent.error);
+      const isErrorTrue = !!resultTrue.error || (resultTrue.structuredContent && (resultTrue.structuredContent as { error?: unknown }).error);
       if (!isErrorTrue) {
-        const branchTrue = resultTrue.structuredContent?.result as Output | undefined;
+        const branchTrue = (resultTrue.structuredContent as { result?: unknown } | undefined)?.result as Output | undefined;
         try {
           assertObjectsShape(branchTrue, 'should have objects shape');
         } catch {
@@ -443,9 +443,9 @@ describe('message_search', () => {
         createExtra()
       );
 
-      const isErrorFalse = !!resultFalse.error || (resultFalse.structuredContent && resultFalse.structuredContent.error);
+      const isErrorFalse = !!resultFalse.error || (resultFalse.structuredContent && (resultFalse.structuredContent as { error?: unknown }).error);
       if (!isErrorFalse) {
-        const branchFalse = resultFalse.structuredContent?.result as Output | undefined;
+        const branchFalse = (resultFalse.structuredContent as { result?: unknown } | undefined)?.result as Output | undefined;
         try {
           assertObjectsShape(branchFalse, 'should have objects shape');
         } catch {
@@ -480,7 +480,7 @@ describe('message_search', () => {
       (schema as SchemaLike).parse(result.structuredContent);
 
       // Type the branch properly for item access
-      const branch = result.structuredContent?.result as Output | undefined;
+      const branch = (result.structuredContent as { result?: unknown } | undefined)?.result as Output | undefined;
       try {
         assertObjectsShape(branch, 'message_search objects shape');
       } catch {
@@ -513,7 +513,7 @@ describe('message_search', () => {
       });
       assert.ok(!result?.error, `unexpected error: ${JSON.stringify(result?.error)}`);
       assert.ok(result && result.structuredContent && result.structuredContent, 'expected structuredContent.result');
-      const branch: Output | undefined = result.structuredContent?.result as Output;
+      const branch: Output | undefined = (result.structuredContent as { result?: unknown } | undefined)?.result as Output;
       assert.ok(branch, 'branch should exist');
       assertObjectsShape(branch, `expected success branch, got ${branch?.type}`);
       const items = branch.items;
@@ -571,7 +571,7 @@ describe('message_search', () => {
           contentType: 'text',
           excludeThreadHistory: false,
         });
-        const branch: Output | undefined = toolRes?.structuredContent?.result as Output;
+        const branch: Output | undefined = (toolRes?.structuredContent as { result?: unknown } | undefined)?.result as Output;
         assert.ok(branch && branch.type, `handler should return structured result: ${JSON.stringify(branch)}`);
         try {
           assertObjectsShape(branch, 'should have objects shape');
@@ -630,7 +630,7 @@ describe('message_search', () => {
           createExtra()
         );
 
-        const initialBranch = initialSearch.structuredContent?.result as Output | undefined;
+        const initialBranch = (initialSearch.structuredContent as { result?: unknown } | undefined)?.result as Output | undefined;
         try {
           assertObjectsShape(initialBranch, 'should have objects shape');
         } catch {
@@ -666,7 +666,7 @@ describe('message_search', () => {
           createExtra()
         );
 
-        const searchMinimalBranch: Output | undefined = searchMinimal.structuredContent?.result as Output;
+        const searchMinimalBranch: Output | undefined = (searchMinimal.structuredContent as { result?: unknown } | undefined)?.result as Output;
         assert.equal(searchMinimalBranch?.type, 'success', 'minimal search should succeed');
         try {
           assertObjectsShape(searchMinimalBranch, 'minimal search should have objects shape');
@@ -686,7 +686,7 @@ describe('message_search', () => {
           createExtra()
         );
 
-        const getBranchWithData = getWithData.structuredContent?.result as MessageGetOutput | undefined;
+        const getBranchWithData = (getWithData.structuredContent as { result?: unknown } | undefined)?.result as MessageGetOutput | undefined;
         assert.equal(getBranchWithData?.type, 'success', 'get with full fields should succeed');
         if (getBranchWithData?.type === 'success') {
           // Wrapped response pattern - data is in item property
@@ -704,7 +704,7 @@ describe('message_search', () => {
           createExtra()
         );
 
-        const getMinimalBranch = getMinimal.structuredContent?.result as MessageGetOutput | undefined;
+        const getMinimalBranch = (getMinimal.structuredContent as { result?: unknown } | undefined)?.result as MessageGetOutput | undefined;
         assert.equal(getMinimalBranch?.type, 'success', 'get with minimal fields should succeed');
         if (getMinimalBranch?.type === 'success') {
           // Wrapped response pattern - data is in item property
@@ -756,8 +756,8 @@ describe('message_search', () => {
         createExtra()
       );
 
-      const withDataBranch = withDataResult.structuredContent?.result as Output | undefined;
-      const withoutDataBranch = withoutDataResult.structuredContent?.result as Output | undefined;
+      const withDataBranch = (withDataResult.structuredContent as { result?: unknown } | undefined)?.result as Output | undefined;
+      const withoutDataBranch = (withoutDataResult.structuredContent as { result?: unknown } | undefined)?.result as Output | undefined;
 
       let withDataObjectsBranch: Extract<typeof withDataBranch, { type: 'success'; shape: 'objects' }> | null = null;
       let withoutDataObjectsBranch: Extract<typeof withoutDataBranch, { type: 'success'; shape: 'objects' }> | null = null;
@@ -813,7 +813,7 @@ describe('message_search', () => {
         createExtra()
       );
 
-      const branch = result.structuredContent?.result as Output | undefined;
+      const branch = (result.structuredContent as { result?: unknown } | undefined)?.result as Output | undefined;
       assert.ok(branch, 'branch should exist');
       try {
         assertObjectsShape(branch, 'should have objects shape');
@@ -852,7 +852,7 @@ describe('message_search', () => {
         );
 
         assert.ok(result.structuredContent, `${testCase.description}: should have structuredContent`);
-        const branch: Output | undefined = result.structuredContent?.result as Output;
+        const branch: Output | undefined = (result.structuredContent as { result?: unknown } | undefined)?.result as Output;
         assert.ok(branch, `${testCase.description}: branch should exist`);
 
         try {
@@ -993,7 +993,7 @@ describe('message_search', () => {
           createExtra()
         );
 
-        const branch = result.structuredContent?.result as Output | undefined;
+        const branch = (result.structuredContent as { result?: unknown } | undefined)?.result as Output | undefined;
         assertObjectsShape(branch, 'expected objects shape');
 
         const foundOurs = branch.items.filter((item) => typeof item.id === 'string' && createdMessageIds.includes(item.id));
@@ -1013,7 +1013,7 @@ describe('message_search', () => {
           createExtra()
         );
 
-        const branch = result.structuredContent?.result as Output | undefined;
+        const branch = (result.structuredContent as { result?: unknown } | undefined)?.result as Output | undefined;
         assertObjectsShape(branch, 'expected objects shape');
 
         const foundOurs = branch.items.filter((item) => typeof item.id === 'string' && createdMessageIds.includes(item.id));
@@ -1033,7 +1033,7 @@ describe('message_search', () => {
           createExtra()
         );
 
-        const branch = result.structuredContent?.result as Output | undefined;
+        const branch = (result.structuredContent as { result?: unknown } | undefined)?.result as Output | undefined;
         assertObjectsShape(branch, 'expected objects shape');
 
         const foundOurs = branch.items.filter((item) => typeof item.id === 'string' && createdMessageIds.includes(item.id));
@@ -1055,7 +1055,7 @@ describe('message_search', () => {
           createExtra()
         );
 
-        const branch = result.structuredContent?.result as Output | undefined;
+        const branch = (result.structuredContent as { result?: unknown } | undefined)?.result as Output | undefined;
         assertObjectsShape(branch, 'expected objects shape');
 
         const foundOurs = branch.items.filter((item) => typeof item.id === 'string' && createdMessageIds.includes(item.id));
@@ -1075,7 +1075,7 @@ describe('message_search', () => {
           createExtra()
         );
 
-        const branch = result.structuredContent?.result as Output | undefined;
+        const branch = (result.structuredContent as { result?: unknown } | undefined)?.result as Output | undefined;
         assertObjectsShape(branch, 'expected objects shape');
 
         const foundOurs = branch.items.filter((item) => typeof item.id === 'string' && createdMessageIds.includes(item.id));
@@ -1097,7 +1097,7 @@ describe('message_search', () => {
           createExtra()
         );
 
-        const branch = result.structuredContent?.result as Output | undefined;
+        const branch = (result.structuredContent as { result?: unknown } | undefined)?.result as Output | undefined;
         assertObjectsShape(branch, 'expected objects shape');
 
         const foundOurs = branch.items.filter((item) => typeof item.id === 'string' && createdMessageIds.includes(item.id));
@@ -1123,7 +1123,7 @@ describe('message_search', () => {
           createExtra()
         );
 
-        const branch = result.structuredContent?.result as Output | undefined;
+        const branch = (result.structuredContent as { result?: unknown } | undefined)?.result as Output | undefined;
         assertObjectsShape(branch, 'expected objects shape');
 
         const foundOurs = branch.items.filter((item) => typeof item.id === 'string' && createdMessageIds.includes(item.id));
@@ -1145,7 +1145,7 @@ describe('message_search', () => {
           createExtra()
         );
 
-        const branch = result.structuredContent?.result as Output | undefined;
+        const branch = (result.structuredContent as { result?: unknown } | undefined)?.result as Output | undefined;
         assertObjectsShape(branch, 'expected objects shape');
 
         const foundOurs = branch.items.filter((item) => typeof item.id === 'string' && createdMessageIds.includes(item.id));
@@ -1167,7 +1167,7 @@ describe('message_search', () => {
           createExtra()
         );
 
-        const branch = result.structuredContent?.result as Output | undefined;
+        const branch = (result.structuredContent as { result?: unknown } | undefined)?.result as Output | undefined;
         assertObjectsShape(branch, 'expected objects shape');
 
         const foundOurs = branch.items.filter((item) => typeof item.id === 'string' && createdMessageIds.includes(item.id));
@@ -1191,7 +1191,7 @@ describe('message_search', () => {
           createExtra()
         );
 
-        const branch = result.structuredContent?.result as Output | undefined;
+        const branch = (result.structuredContent as { result?: unknown } | undefined)?.result as Output | undefined;
         assertObjectsShape(branch, 'expected objects shape');
 
         const foundOurs = branch.items.filter((item) => typeof item.id === 'string' && createdMessageIds.includes(item.id));
@@ -1211,7 +1211,7 @@ describe('message_search', () => {
           createExtra()
         );
 
-        const branch = result.structuredContent?.result as Output | undefined;
+        const branch = (result.structuredContent as { result?: unknown } | undefined)?.result as Output | undefined;
         assertObjectsShape(branch, 'expected objects shape');
 
         const foundOurs = branch.items.filter((item) => typeof item.id === 'string' && createdMessageIds.includes(item.id));
@@ -1233,7 +1233,7 @@ describe('message_search', () => {
           createExtra()
         );
 
-        const branch = result.structuredContent?.result as Output | undefined;
+        const branch = (result.structuredContent as { result?: unknown } | undefined)?.result as Output | undefined;
         assertObjectsShape(branch, 'expected objects shape');
 
         const foundOurs = branch.items.filter((item) => typeof item.id === 'string' && createdMessageIds.includes(item.id));
@@ -1285,7 +1285,7 @@ describe('message_search', () => {
           createExtra()
         );
 
-        const branch = result.structuredContent?.result as Output | undefined;
+        const branch = (result.structuredContent as { result?: unknown } | undefined)?.result as Output | undefined;
 
         // If it succeeds (no Graph API syntax error), should return empty results
         assertObjectsShape(branch, 'should return success with objects shape');
@@ -1316,7 +1316,7 @@ describe('message_search', () => {
         createExtra()
       );
 
-      const branch = result.structuredContent?.result as Output | undefined;
+      const branch = (result.structuredContent as { result?: unknown } | undefined)?.result as Output | undefined;
       assertObjectsShape(branch, 'should succeed with objects shape even with no results');
       assert.ok(Array.isArray(branch.items), 'should have items array');
       assert.strictEqual(branch.items.length, 0, 'should have zero items');
@@ -1343,7 +1343,7 @@ describe('message_search', () => {
           } as Input,
           createExtra()
         );
-        assert.fail('Expected McpError to be thrown for malformed date query');
+        assert.fail('Expected ProtocolError to be thrown for malformed date query');
       } catch (err) {
         assert.ok(err instanceof Error, 'Error should be an Error instance');
         assert.ok(err.message.includes('Error searching messages') || err.message.includes('Invalid filter'), 'Error should indicate invalid query');
@@ -1364,7 +1364,7 @@ describe('message_search', () => {
         createExtra()
       );
 
-      const branch = result.structuredContent?.result as Output | undefined;
+      const branch = (result.structuredContent as { result?: unknown } | undefined)?.result as Output | undefined;
       try {
         assertObjectsShape(branch, 'should have objects shape');
       } catch {

@@ -4,10 +4,9 @@ import { schemas } from '@mcp-z/oauth-microsoft';
 
 const { AuthRequiredBranchSchema } = schemas;
 
-import { createFieldsSchema, createPaginationSchema, createShapeSchema, filterFields, parseFields, type ToolModule, toColumnarFormat } from '@mcp-z/server';
+import { type CallToolResult, createFieldsSchema, createPaginationSchema, createShapeSchema, filterFields, ProtocolError, ProtocolErrorCode, parseFields, type ToolModule, toColumnarFormat } from '@mcp-z/server';
 import { Client } from '@microsoft/microsoft-graph-client';
 import type * as MicrosoftGraph from '@microsoft/microsoft-graph-types';
-import { type CallToolResult, ErrorCode, McpError } from '@modelcontextprotocol/sdk/types.js';
 import { z } from 'zod';
 import { needsBody } from '../../email/querying/client-filter.ts';
 import { executeQuery as executeOutlookQuery } from '../../email/querying/execute-query.ts';
@@ -191,7 +190,7 @@ async function handler({ query, pageSize = 50, pageToken, fields, shape = 'array
     const message = error instanceof Error ? error.message : String(error);
     logger.error('outlook.message.search error', { error: message });
 
-    throw new McpError(ErrorCode.InternalError, `Error searching messages: ${message}`, {
+    throw new ProtocolError(ProtocolErrorCode.InternalError, `Error searching messages: ${message}`, {
       stack: error instanceof Error ? error.stack : undefined,
     });
   }

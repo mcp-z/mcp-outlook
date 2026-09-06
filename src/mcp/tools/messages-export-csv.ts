@@ -6,10 +6,9 @@ import { schemas } from '@mcp-z/oauth-microsoft';
 
 const { AuthRequiredBranchSchema } = schemas;
 
-import { getFileUri, reserveFile, type ToolModule } from '@mcp-z/server';
+import { type CallToolResult, getFileUri, ProtocolError, ProtocolErrorCode, reserveFile, type ToolModule } from '@mcp-z/server';
 import { Client } from '@microsoft/microsoft-graph-client';
 import type * as MicrosoftGraph from '@microsoft/microsoft-graph-types';
-import { type CallToolResult, ErrorCode, McpError } from '@modelcontextprotocol/sdk/types.js';
 import { stringify } from 'csv-stringify/sync';
 import { createWriteStream } from 'fs';
 import { unlink } from 'fs/promises';
@@ -264,7 +263,7 @@ async function handler({ query, maxItems, filename, contentType, excludeThreadHi
     const message = error instanceof Error ? error.message : String(error);
     logger.error('outlook.messages.export-csv error', { error: message });
 
-    throw new McpError(ErrorCode.InternalError, `Error exporting messages to CSV: ${message}`, {
+    throw new ProtocolError(ProtocolErrorCode.InternalError, `Error exporting messages to CSV: ${message}`, {
       stack: error instanceof Error ? error.stack : undefined,
     });
   }

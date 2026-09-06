@@ -5,8 +5,8 @@ import { schemas } from '@mcp-z/oauth-microsoft';
 const { AuthRequiredBranchSchema } = schemas;
 
 import type { ToolModule } from '@mcp-z/server';
+import { type CallToolResult, ProtocolError, ProtocolErrorCode } from '@mcp-z/server';
 import { Client } from '@microsoft/microsoft-graph-client';
-import { type CallToolResult, ErrorCode, McpError } from '@modelcontextprotocol/sdk/types.js';
 import { z } from 'zod';
 import { buildOutlookMessage } from '../../email/composition/outlook-message-builder.ts';
 
@@ -76,7 +76,7 @@ async function handler({ to, cc, bcc, subject, body, contentType }: Input, extra
 
     if (!messageId) {
       logger.error('outlook.message.send draft creation failed - no ID returned');
-      throw new McpError(ErrorCode.InternalError, 'Failed to create draft message');
+      throw new ProtocolError(ProtocolErrorCode.InternalError, 'Failed to create draft message');
     }
 
     // 2. Send the draft
@@ -111,7 +111,7 @@ async function handler({ to, cc, bcc, subject, body, contentType }: Input, extra
     const message = error instanceof Error ? error.message : String(error);
     logger.error('outlook.message.send error', { error: message });
 
-    throw new McpError(ErrorCode.InternalError, `Error sending message: ${message}`, {
+    throw new ProtocolError(ProtocolErrorCode.InternalError, `Error sending message: ${message}`, {
       stack: error instanceof Error ? error.stack : undefined,
     });
   }

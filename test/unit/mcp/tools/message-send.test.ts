@@ -1,7 +1,7 @@
 import { mcp } from '@mcp-z/mcp-outlook';
 import type { Logger, MicrosoftAuthProvider } from '@mcp-z/oauth-microsoft';
+import type { CallToolResult } from '@mcp-z/server';
 import { Client } from '@microsoft/microsoft-graph-client';
-import type { CallToolResult } from '@modelcontextprotocol/sdk/types.js';
 import assert from 'assert';
 import type { Input, Output } from '../../../../src/mcp/tools/message-send.ts';
 import { createExtra, type TypedHandler } from '../../../lib/create-extra.ts';
@@ -40,7 +40,7 @@ before(async () => {
 
 function extractMessageId(result: CallToolResult): string | undefined {
   // Prefer structuredContent.result when present
-  const branch: Output | undefined = result?.structuredContent?.result as Output;
+  const branch: Output | undefined = (result?.structuredContent as { result?: unknown } | undefined)?.result as Output;
   if (branch?.type === 'success' && typeof branch.id === 'string') {
     return branch.id;
   }
@@ -88,7 +88,7 @@ it('send returns structured success or an error payload', async () => {
     }
 
     // Extract message ID for close
-    const branch: Output | undefined = res.structuredContent?.result as Output;
+    const branch: Output | undefined = (res.structuredContent as { result?: unknown } | undefined)?.result as Output;
     if (branch?.type === 'success' && typeof branch.id === 'string') {
       createdIds.push(branch.id);
     }
@@ -145,7 +145,7 @@ describe('Context authentication pattern', () => {
     try {
       assert.ok(result);
       assert.ok(result.content || result.structuredContent);
-      const branch: Output | undefined = result.structuredContent?.result as Output;
+      const branch: Output | undefined = (result.structuredContent as { result?: unknown } | undefined)?.result as Output;
       if (branch) {
         assert.equal(branch.type, 'success', 'Result should be success type');
       }
@@ -167,7 +167,7 @@ describe('Response structure', () => {
     try {
       assert.ok(result);
       const hasValidContent = result.content && Array.isArray(result.content) && result.content.length > 0;
-      const branch: Output | undefined = result.structuredContent?.result as Output;
+      const branch: Output | undefined = (result.structuredContent as { result?: unknown } | undefined)?.result as Output;
       const hasValidStructured = branch && typeof branch.type === 'string';
       assert.ok(hasValidContent || hasValidStructured, 'Result should have either valid content array or valid structuredContent');
 

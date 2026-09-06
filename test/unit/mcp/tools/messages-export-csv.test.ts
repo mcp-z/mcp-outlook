@@ -108,7 +108,7 @@ describe('Outlook messages export CSV tool (directory creation)', () => {
     );
 
     // Validate success
-    const structured = result?.structuredContent?.result as Output | undefined;
+    const structured = (result?.structuredContent as { result?: unknown } | undefined)?.result as Output | undefined;
     assert.strictEqual(structured?.type, 'success', 'Expected success result');
 
     if (structured?.type === 'success') {
@@ -143,7 +143,7 @@ describe('Outlook messages export CSV tool (directory creation)', () => {
     );
 
     // Validate success
-    const structured = result?.structuredContent?.result as Output | undefined;
+    const structured = (result?.structuredContent as { result?: unknown } | undefined)?.result as Output | undefined;
     assert.strictEqual(structured?.type, 'success', 'Expected success result');
 
     if (structured?.type === 'success') {
@@ -187,7 +187,7 @@ describe('Outlook messages export CSV tool (directory creation)', () => {
 
     try {
       // Validate success
-      const structured = (result as unknown as { structuredContent?: { result: Output } })?.structuredContent?.result as Output | undefined;
+      const structured = ((result as unknown as { structuredContent?: { result: Output } })?.structuredContent as { result?: unknown } | undefined)?.result as Output | undefined;
       assert.strictEqual(structured?.type, 'success', 'Expected success result');
 
       if (structured?.type === 'success') {
@@ -223,7 +223,7 @@ describe('Outlook messages export CSV tool (directory creation)', () => {
     );
 
     // Validate success
-    const structured = result?.structuredContent?.result as Output | undefined;
+    const structured = (result?.structuredContent as { result?: unknown } | undefined)?.result as Output | undefined;
     assert.strictEqual(structured?.type, 'success', 'Expected success result');
 
     if (structured?.type === 'success') {
@@ -300,7 +300,7 @@ describe('Outlook messages export CSV tool (directory creation)', () => {
     );
 
     // Validate success
-    const structured = result?.structuredContent?.result as Output | undefined;
+    const structured = (result?.structuredContent as { result?: unknown } | undefined)?.result as Output | undefined;
     assert.strictEqual(structured?.type, 'success', 'Expected success result');
 
     if (structured?.type === 'success') {
@@ -336,7 +336,7 @@ describe('Outlook messages export CSV tool (directory creation)', () => {
         createExtra(storageContext)
       );
 
-      const structured = result?.structuredContent?.result as Output | undefined;
+      const structured = (result?.structuredContent as { result?: unknown } | undefined)?.result as Output | undefined;
       assert.strictEqual(structured?.type, 'success', 'Should succeed even with no results');
 
       if (structured?.type === 'success') {
@@ -385,7 +385,7 @@ describe('Outlook messages export CSV tool (directory creation)', () => {
         createExtra(storageContext)
       );
 
-      const structured = result?.structuredContent?.result as Output | undefined;
+      const structured = (result?.structuredContent as { result?: unknown } | undefined)?.result as Output | undefined;
       assert.strictEqual(structured?.type, 'success', 'Should succeed');
 
       if (structured?.type === 'success') {
@@ -420,7 +420,7 @@ describe('Outlook messages export CSV tool (directory creation)', () => {
         createExtra(storageContext)
       );
 
-      const structured = result?.structuredContent?.result as Output | undefined;
+      const structured = (result?.structuredContent as { result?: unknown } | undefined)?.result as Output | undefined;
       assert.strictEqual(structured?.type, 'success', 'Should succeed with maxItems=0');
 
       if (structured?.type === 'success') {
@@ -450,7 +450,7 @@ describe('Outlook messages export CSV tool (directory creation)', () => {
           } as Input,
           createExtra(storageContext)
         );
-        assert.fail('Expected McpError to be thrown for malformed date query');
+        assert.fail('Expected ProtocolError to be thrown for malformed date query');
       } catch (err) {
         assert.ok(err instanceof Error, 'Error should be an Error instance');
         assert.ok(err.message.includes('Error exporting messages') || err.message.includes('Invalid filter'), 'Error should indicate invalid query');
