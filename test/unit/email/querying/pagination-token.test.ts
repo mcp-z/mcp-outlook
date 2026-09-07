@@ -1,3 +1,4 @@
+import '../../../lib/env-loader.ts';
 import assert from 'assert';
 import { decodeNextPageToken, encodeNextPageToken } from '../../../../src/email/querying/pagination-token.ts';
 

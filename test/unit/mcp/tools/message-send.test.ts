@@ -1,3 +1,4 @@
+import '../../../lib/env-loader.ts';
 import { mcp } from '@mcp-z/mcp-outlook';
 import type { Logger, MicrosoftAuthProvider } from '@mcp-z/oauth-microsoft';
 import type { CallToolResult } from '@mcp-z/server';

@@ -1,3 +1,4 @@
+import '../../../lib/env-loader.ts';
 import type { StorageContext, StorageExtra } from '@mcp-z/mcp-outlook';
 import { mcp } from '@mcp-z/mcp-outlook';
 import type { EnrichedExtra, Logger } from '@mcp-z/oauth-microsoft';

@@ -1,3 +1,4 @@
+import '../../../lib/env-loader.ts';
 import type { OutlookSystemCategory } from '@mcp-z/mcp-outlook';
 import assert from 'assert';
 import { toGraphFilter, toOutlookFilter } from '../../../../src/email/querying/query-builder.ts';

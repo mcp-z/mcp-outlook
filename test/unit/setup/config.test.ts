@@ -1,3 +1,4 @@
+import '../../lib/env-loader.ts';
 import { setup } from '@mcp-z/mcp-outlook';
 import assert from 'assert';
 

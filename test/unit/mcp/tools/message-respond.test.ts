@@ -1,3 +1,4 @@
+import '../../../lib/env-loader.ts';
 import { mcp } from '@mcp-z/mcp-outlook';
 import assert from 'assert';
 import type { Input } from '../../../../src/mcp/tools/message-respond.ts';
