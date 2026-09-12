@@ -10,6 +10,7 @@
 <h1>@mcp-z/mcp-outlook</h1></div>
 <div class="tsd-panel tsd-typography"><h1 id="mcp-zmcp-outlook" class="tsd-anchor-link">@mcp-z/mcp-outlook<a href="#mcp-zmcp-outlook" aria-label="Permalink" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="assets/icons.svg#icon-anchor"></use></svg></a></h1>
 <p>MCP server for Outlook integration with OAuth authentication, message search, and batch operations</p>
+<p>Requires Node.js &gt;=20. The examples use <code>npx</code>, included with npm, to run this server and <code>@mcp-z/cli</code>.</p>
 <h2 id="common-uses" class="tsd-anchor-link">Common uses<a href="#common-uses" aria-label="Permalink" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="assets/icons.svg#icon-anchor"></use></svg></a></h2>
 <ul>
 <li>Search and read messages</li>
@@ -18,6 +19,10 @@
 </ul>
 <h2 id="transports" class="tsd-anchor-link">Transports<a href="#transports" aria-label="Permalink" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="assets/icons.svg#icon-anchor"></use></svg></a></h2>
 <p>MCP supports stdio and HTTP.</p>
+<p>Both the 2025 and 2026-07-28 protocol revisions are served, over either transport, from the same
+server. Your client negotiates whichever it speaks. A 2025 client keeps working with no change,
+and support for it is not being dropped. The 2026-07-28 revision is stateless, so a client speaking
+it sends no <code>initialize</code> handshake and carries no session id.</p>
 <p><strong>Stdio</strong></p>
 <pre><code class="json"><span class="hl-0">{</span><br/><span class="hl-0">  </span><span class="hl-1">&quot;mcpServers&quot;</span><span class="hl-0">: {</span><br/><span class="hl-0">    </span><span class="hl-1">&quot;outlook&quot;</span><span class="hl-0">: {</span><br/><span class="hl-0">      </span><span class="hl-1">&quot;command&quot;</span><span class="hl-0">: </span><span class="hl-2">&quot;npx&quot;</span><span class="hl-0">,</span><br/><span class="hl-0">      </span><span class="hl-1">&quot;args&quot;</span><span class="hl-0">: [</span><span class="hl-2">&quot;-y&quot;</span><span class="hl-0">, </span><span class="hl-2">&quot;@mcp-z/mcp-outlook&quot;</span><span class="hl-0">]</span><br/><span class="hl-0">    }</span><br/><span class="hl-0">  }</span><br/><span class="hl-0">}</span>
 </code><button type="button">Copy</button></pre>
@@ -26,7 +31,7 @@
 <pre><code class="json"><span class="hl-0">{</span><br/><span class="hl-0">  </span><span class="hl-1">&quot;mcpServers&quot;</span><span class="hl-0">: {</span><br/><span class="hl-0">    </span><span class="hl-1">&quot;outlook&quot;</span><span class="hl-0">: {</span><br/><span class="hl-0">      </span><span class="hl-1">&quot;type&quot;</span><span class="hl-0">: </span><span class="hl-2">&quot;http&quot;</span><span class="hl-0">,</span><br/><span class="hl-0">      </span><span class="hl-1">&quot;url&quot;</span><span class="hl-0">: </span><span class="hl-2">&quot;http://localhost:9003/mcp&quot;</span><span class="hl-0">,</span><br/><span class="hl-0">      </span><span class="hl-1">&quot;start&quot;</span><span class="hl-0">: {</span><br/><span class="hl-0">        </span><span class="hl-1">&quot;command&quot;</span><span class="hl-0">: </span><span class="hl-2">&quot;npx&quot;</span><span class="hl-0">,</span><br/><span class="hl-0">        </span><span class="hl-1">&quot;args&quot;</span><span class="hl-0">: [</span><span class="hl-2">&quot;-y&quot;</span><span class="hl-0">, </span><span class="hl-2">&quot;@mcp-z/mcp-outlook&quot;</span><span class="hl-0">, </span><span class="hl-2">&quot;--port=9003&quot;</span><span class="hl-0">]</span><br/><span class="hl-0">      }</span><br/><span class="hl-0">    }</span><br/><span class="hl-0">  }</span><br/><span class="hl-0">}</span>
 </code><button type="button">Copy</button></pre>
 
-<p><code>start</code> is an extension used by <code>npx @mcp-z/cli up</code> to launch HTTP servers for you.</p>
+<p><code>start</code> is an extension used by <code>npx @mcp-z/cli up</code> to launch HTTP servers for you. The HTTP endpoint is <code>/mcp</code>.</p>
 <h2 id="create-a-microsoft-app" class="tsd-anchor-link">Create a Microsoft app<a href="#create-a-microsoft-app" aria-label="Permalink" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="assets/icons.svg#icon-anchor"></use></svg></a></h2>
 <ol>
 <li>Go to <a href="https://portal.azure.com/">Azure Portal</a>.</li>
@@ -34,14 +39,13 @@
 <li>Click New registration.</li>
 <li>Choose a name and select a supported account type.</li>
 <li>Copy the Application (client) ID and Directory (tenant) ID.</li>
-<li>Select your MCP transport (stdio for local and http for remote) and platform</li>
-</ol>
+<li>Select the credential platform that matches your transport:
 <ul>
-<li>For stdio, choose &quot;Authentication&quot;, + Add Redirect URI, &quot;Mobile and desktop applications&quot; platform</li>
-<li>For http, choose &quot;Authentication&quot;, + Add Redirect URI, &quot;Web&quot; platform, add your URL (default is <a href="http://localhost:3000/oauth/callback">http://localhost:3000/oauth/callback</a> based on the --port or PORT)</li>
-<li>For local hosting, add &quot;<a href="http://localhost">http://localhost</a>&quot; for <a href="https://en.wikipedia.org/wiki/Ephemeral_port">Ephemeral redirect URL</a></li>
+<li>For stdio, choose &quot;Mobile and desktop applications&quot; under Authentication and add the loopback redirect URI.</li>
+<li>For HTTP, choose &quot;Web&quot; and add your public <code>/oauth/callback</code> URL. Local HTTP uses the port configured with <code>--port</code> or <code>PORT</code>.</li>
+<li>For local hosting, add <code>http://localhost</code> for the <a href="https://en.wikipedia.org/wiki/Ephemeral_port">ephemeral redirect URL</a>.</li>
 </ul>
-<ol start="7">
+</li>
 <li>Enable OAuth2 scopes in API Permissions: openid profile offline_access <a href="https://graph.microsoft.com/User.Read">https://graph.microsoft.com/User.Read</a> <a href="https://graph.microsoft.com/Mail.ReadWrite">https://graph.microsoft.com/Mail.ReadWrite</a> <a href="https://graph.microsoft.com/Mail.Send">https://graph.microsoft.com/Mail.Send</a> <a href="https://graph.microsoft.com/MailboxSettings.ReadWrite">https://graph.microsoft.com/MailboxSettings.ReadWrite</a></li>
 </ol>
 <h2 id="oauth-modes" class="tsd-anchor-link">OAuth modes<a href="#oauth-modes" aria-label="Permalink" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="assets/icons.svg#icon-anchor"></use></svg></a></h2>
@@ -56,11 +60,11 @@
 </code><button type="button">Copy</button></pre>
 
 <p>Example (http) - Create .mcp.json:</p>
-<pre><code class="json"><span class="hl-0">{</span><br/><span class="hl-0">  </span><span class="hl-1">&quot;mcpServers&quot;</span><span class="hl-0">: {</span><br/><span class="hl-0">    </span><span class="hl-1">&quot;outlook&quot;</span><span class="hl-0">: {</span><br/><span class="hl-0">      </span><span class="hl-1">&quot;type&quot;</span><span class="hl-0">: </span><span class="hl-2">&quot;http&quot;</span><span class="hl-0">,</span><br/><span class="hl-0">      </span><span class="hl-1">&quot;url&quot;</span><span class="hl-0">: </span><span class="hl-2">&quot;http://localhost:3000&quot;</span><span class="hl-0">,</span><br/><span class="hl-0">      </span><span class="hl-1">&quot;start&quot;</span><span class="hl-0">: {</span><br/><span class="hl-0">        </span><span class="hl-1">&quot;command&quot;</span><span class="hl-0">: </span><span class="hl-2">&quot;npx&quot;</span><span class="hl-0">,</span><br/><span class="hl-0">        </span><span class="hl-1">&quot;args&quot;</span><span class="hl-0">: [</span><span class="hl-2">&quot;-y&quot;</span><span class="hl-0">, </span><span class="hl-2">&quot;@mcp-z/mcp-outlook&quot;</span><span class="hl-0">, </span><span class="hl-2">&quot;--port=3000&quot;</span><span class="hl-0">],</span><br/><span class="hl-0">        </span><span class="hl-1">&quot;env&quot;</span><span class="hl-0">: {</span><br/><span class="hl-0">          </span><span class="hl-1">&quot;MS_CLIENT_ID&quot;</span><span class="hl-0">: </span><span class="hl-2">&quot;your-client-id&quot;</span><span class="hl-0">,</span><br/><span class="hl-0">          </span><span class="hl-1">&quot;MS_TENANT_ID&quot;</span><span class="hl-0">: </span><span class="hl-2">&quot;common&quot;</span><br/><span class="hl-0">        }</span><br/><span class="hl-0">      }</span><br/><span class="hl-0">    }</span><br/><span class="hl-0">  }</span><br/><span class="hl-0">}</span>
+<pre><code class="json"><span class="hl-0">{</span><br/><span class="hl-0">  </span><span class="hl-1">&quot;mcpServers&quot;</span><span class="hl-0">: {</span><br/><span class="hl-0">    </span><span class="hl-1">&quot;outlook&quot;</span><span class="hl-0">: {</span><br/><span class="hl-0">      </span><span class="hl-1">&quot;type&quot;</span><span class="hl-0">: </span><span class="hl-2">&quot;http&quot;</span><span class="hl-0">,</span><br/><span class="hl-0">      </span><span class="hl-1">&quot;url&quot;</span><span class="hl-0">: </span><span class="hl-2">&quot;http://localhost:3000/mcp&quot;</span><span class="hl-0">,</span><br/><span class="hl-0">      </span><span class="hl-1">&quot;start&quot;</span><span class="hl-0">: {</span><br/><span class="hl-0">        </span><span class="hl-1">&quot;command&quot;</span><span class="hl-0">: </span><span class="hl-2">&quot;npx&quot;</span><span class="hl-0">,</span><br/><span class="hl-0">        </span><span class="hl-1">&quot;args&quot;</span><span class="hl-0">: [</span><span class="hl-2">&quot;-y&quot;</span><span class="hl-0">, </span><span class="hl-2">&quot;@mcp-z/mcp-outlook&quot;</span><span class="hl-0">, </span><span class="hl-2">&quot;--port=3000&quot;</span><span class="hl-0">],</span><br/><span class="hl-0">        </span><span class="hl-1">&quot;env&quot;</span><span class="hl-0">: {</span><br/><span class="hl-0">          </span><span class="hl-1">&quot;MS_CLIENT_ID&quot;</span><span class="hl-0">: </span><span class="hl-2">&quot;your-client-id&quot;</span><span class="hl-0">,</span><br/><span class="hl-0">          </span><span class="hl-1">&quot;MS_TENANT_ID&quot;</span><span class="hl-0">: </span><span class="hl-2">&quot;common&quot;</span><br/><span class="hl-0">        }</span><br/><span class="hl-0">      }</span><br/><span class="hl-0">    }</span><br/><span class="hl-0">  }</span><br/><span class="hl-0">}</span>
 </code><button type="button">Copy</button></pre>
 
 <p>Local (default): omit REDIRECT_URI → ephemeral loopback. Cloud: set REDIRECT_URI to your public /oauth/callback and expose the service publicly.</p>
-<p>Note: start block is a helper in &quot;npx @mcp-z/cli up&quot; for starting an http server from your .mpc.json. See <a href="https://github.com/mcp-z/cli">@mcp-z/cli</a> for details.</p>
+<p>Note: the <code>start</code> block is a helper in <code>npx @mcp-z/cli up</code> for starting an HTTP server from your <code>.mcp.json</code>. See <a href="https://github.com/mcp-z/cli">@mcp-z/cli</a> for details.</p>
 <h3 id="device-code" class="tsd-anchor-link">Device code<a href="#device-code" aria-label="Permalink" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="assets/icons.svg#icon-anchor"></use></svg></a></h3>
 <p>Useful for headless or remote environments.</p>
 <pre><code class="json"><span class="hl-0">{</span><br/><span class="hl-0">  </span><span class="hl-1">&quot;mcpServers&quot;</span><span class="hl-0">: {</span><br/><span class="hl-0">    </span><span class="hl-1">&quot;outlook&quot;</span><span class="hl-0">: {</span><br/><span class="hl-0">      </span><span class="hl-1">&quot;command&quot;</span><span class="hl-0">: </span><span class="hl-2">&quot;npx&quot;</span><span class="hl-0">,</span><br/><span class="hl-0">      </span><span class="hl-1">&quot;args&quot;</span><span class="hl-0">: [</span><span class="hl-2">&quot;-y&quot;</span><span class="hl-0">, </span><span class="hl-2">&quot;@mcp-z/mcp-outlook&quot;</span><span class="hl-0">, </span><span class="hl-2">&quot;--auth=device-code&quot;</span><span class="hl-0">],</span><br/><span class="hl-0">      </span><span class="hl-1">&quot;env&quot;</span><span class="hl-0">: {</span><br/><span class="hl-0">        </span><span class="hl-1">&quot;MS_CLIENT_ID&quot;</span><span class="hl-0">: </span><span class="hl-2">&quot;your-client-id&quot;</span><span class="hl-0">,</span><br/><span class="hl-0">        </span><span class="hl-1">&quot;MS_TENANT_ID&quot;</span><span class="hl-0">: </span><span class="hl-2">&quot;common&quot;</span><br/><span class="hl-0">      }</span><br/><span class="hl-0">    }</span><br/><span class="hl-0">  }</span><br/><span class="hl-0">}</span>
@@ -72,7 +76,7 @@
 </code><button type="button">Copy</button></pre>
 
 <h2 id="how-to-use" class="tsd-anchor-link">How to use<a href="#how-to-use" aria-label="Permalink" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="assets/icons.svg#icon-anchor"></use></svg></a></h2>
-<pre><code class="bash"><span class="hl-4"># List tools</span><br/><span class="hl-5">mcp-z</span><span class="hl-0"> </span><span class="hl-2">inspect</span><span class="hl-0"> </span><span class="hl-6">--servers</span><span class="hl-0"> </span><span class="hl-2">outlook</span><span class="hl-0"> </span><span class="hl-6">--tools</span><br/><br/><span class="hl-4"># Call a tool</span><br/><span class="hl-5">mcp-z</span><span class="hl-0"> </span><span class="hl-2">call</span><span class="hl-0"> </span><span class="hl-2">outlook</span><span class="hl-0"> </span><span class="hl-2">message-search</span><span class="hl-0"> </span><span class="hl-2">&#39;{&quot;query&quot;:&quot;from:alice@example.com&quot;}&#39;</span>
+<pre><code class="bash"><span class="hl-4"># List tools</span><br/><span class="hl-5">npx</span><span class="hl-0"> </span><span class="hl-6">-y</span><span class="hl-0"> </span><span class="hl-2">@mcp-z/cli</span><span class="hl-0"> </span><span class="hl-2">inspect</span><span class="hl-0"> </span><span class="hl-6">--servers</span><span class="hl-0"> </span><span class="hl-2">outlook</span><span class="hl-0"> </span><span class="hl-6">--tools</span><br/><br/><span class="hl-4"># Call a tool</span><br/><span class="hl-5">npx</span><span class="hl-0"> </span><span class="hl-6">-y</span><span class="hl-0"> </span><span class="hl-2">@mcp-z/cli</span><span class="hl-0"> </span><span class="hl-2">call-tool</span><span class="hl-0"> </span><span class="hl-2">outlook</span><span class="hl-0"> </span><span class="hl-2">message-search</span><span class="hl-0"> </span><span class="hl-2">&#39;{&quot;query&quot;:&quot;from:alice@example.com&quot;}&#39;</span>
 </code><button type="button">Copy</button></pre>
 
 <h2 id="tools" class="tsd-anchor-link">Tools<a href="#tools" aria-label="Permalink" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="assets/icons.svg#icon-anchor"></use></svg></a></h2>
@@ -99,7 +103,7 @@
 <li>query-syntax</li>
 </ol>
 <h2 id="configuration-reference" class="tsd-anchor-link">Configuration reference<a href="#configuration-reference" aria-label="Permalink" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="assets/icons.svg#icon-anchor"></use></svg></a></h2>
-<p>See <code>server.json</code> for all supported environment variables, CLI arguments, and defaults.</p>
+<p>See <a href="https://github.com/mcp-z/mcp-outlook/blob/master/server.json"><code>server.json</code></a> for all supported environment variables, CLI arguments, and defaults.</p>
 <h2 id="storage-backends" class="tsd-anchor-link">Storage backends<a href="#storage-backends" aria-label="Permalink" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="assets/icons.svg#icon-anchor"></use></svg></a></h2>
 <p>OAuth tokens (<code>TOKEN_STORE_URI</code>) and DCR registrations (<code>DCR_STORE_URI</code>) are stored through <a href="https://www.npmjs.com/package/keyv-registry">keyv-registry</a>, which picks an adapter from the URI protocol.</p>
 <p><code>file://</code> (the default, under <code>~/.mcp-z/</code>) and <code>memory://</code> work with no extra setup.</p>
@@ -108,7 +112,7 @@
 </code><button type="button">Copy</button></pre>
 
 <p>A protocol whose adapter is missing fails at startup naming the package to install.</p>
-<h3 id="documentation" class="tsd-anchor-link">Documentation<a href="#documentation" aria-label="Permalink" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="assets/icons.svg#icon-anchor"></use></svg></a></h3>
+<h2 id="documentation" class="tsd-anchor-link">Documentation<a href="#documentation" aria-label="Permalink" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="assets/icons.svg#icon-anchor"></use></svg></a></h2>
 <p><a href="https://mcp-z.github.io/mcp-outlook">API Docs</a></p>
 </div></div>
 <div class="col-sidebar">
@@ -141,9 +145,7 @@
 <li><a href="#prompts"><span>Prompts</span></a></li>
 <li><a href="#configuration-reference"><span>Configuration reference</span></a></li>
 <li><a href="#storage-backends"><span>Storage backends</span></a></li>
-<li>
-<ul>
-<li><a href="#documentation"><span>Documentation</span></a></li></ul></li></ul></div></details></div>
+<li><a href="#documentation"><span>Documentation</span></a></li></ul></div></details></div>
 <div class="site-menu">
 <nav class="tsd-navigation"><a href="modules.html">@mcp-z/mcp-outlook</a>
 <ul class="tsd-small-nested-navigation" id="tsd-nav-container">
