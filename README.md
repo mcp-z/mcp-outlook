@@ -2,6 +2,8 @@
 
 MCP server for Outlook integration with OAuth authentication, message search, and batch operations
 
+Requires Node.js >=20. The examples use `npx`, included with npm, to run this server and `@mcp-z/cli`.
+
 ## Common uses
 
 - Search and read messages
@@ -11,6 +13,11 @@ MCP server for Outlook integration with OAuth authentication, message search, an
 ## Transports
 
 MCP supports stdio and HTTP.
+
+Both the 2025 and 2026-07-28 protocol revisions are served, over either transport, from the same
+server. Your client negotiates whichever it speaks. A 2025 client keeps working with no change,
+and support for it is not being dropped. The 2026-07-28 revision is stateless, so a client speaking
+it sends no `initialize` handshake and carries no session id.
 
 **Stdio**
 ```json
@@ -40,7 +47,7 @@ MCP supports stdio and HTTP.
 }
 ```
 
-`start` is an extension used by `npx @mcp-z/cli up` to launch HTTP servers for you.
+`start` is an extension used by `npx @mcp-z/cli up` to launch HTTP servers for you. The HTTP endpoint is `/mcp`.
 
 ## Create a Microsoft app
 
@@ -49,10 +56,10 @@ MCP supports stdio and HTTP.
 3. Click New registration.
 4. Choose a name and select a supported account type.
 5. Copy the Application (client) ID and Directory (tenant) ID.
-6. Select your MCP transport (stdio for local and http for remote) and platform
-- For stdio, choose "Authentication", + Add Redirect URI, "Mobile and desktop applications" platform 
-- For http, choose "Authentication", + Add Redirect URI, "Web" platform, add your URL (default is http://localhost:3000/oauth/callback based on the --port or PORT)
-- For local hosting, add "http://localhost" for [Ephemeral redirect URL](https://en.wikipedia.org/wiki/Ephemeral_port)
+6. Select the credential platform that matches your transport:
+   - For stdio, choose "Mobile and desktop applications" under Authentication and add the loopback redirect URI.
+   - For HTTP, choose "Web" and add your public `/oauth/callback` URL. Local HTTP uses the port configured with `--port` or `PORT`.
+   - For local hosting, add `http://localhost` for the [ephemeral redirect URL](https://en.wikipedia.org/wiki/Ephemeral_port).
 7. Enable OAuth2 scopes in API Permissions: openid profile offline_access https://graph.microsoft.com/User.Read https://graph.microsoft.com/Mail.ReadWrite https://graph.microsoft.com/Mail.Send https://graph.microsoft.com/MailboxSettings.ReadWrite
 
 ## OAuth modes
@@ -91,7 +98,7 @@ Example (http) - Create .mcp.json:
   "mcpServers": {
     "outlook": {
       "type": "http",
-      "url": "http://localhost:3000",
+      "url": "http://localhost:3000/mcp",
       "start": {
         "command": "npx",
         "args": ["-y", "@mcp-z/mcp-outlook", "--port=3000"],
@@ -107,7 +114,7 @@ Example (http) - Create .mcp.json:
 
 Local (default): omit REDIRECT_URI → ephemeral loopback. Cloud: set REDIRECT_URI to your public /oauth/callback and expose the service publicly.
 
-Note: start block is a helper in "npx @mcp-z/cli up" for starting an http server from your .mpc.json. See [@mcp-z/cli](https://github.com/mcp-z/cli) for details.
+Note: the `start` block is a helper in `npx @mcp-z/cli up` for starting an HTTP server from your `.mcp.json`. See [@mcp-z/cli](https://github.com/mcp-z/cli) for details.
 
 ### Device code
 
@@ -158,10 +165,10 @@ HTTP only. Requires a public base URL. CSV export and `/files` are disabled in D
 
 ```bash
 # List tools
-mcp-z inspect --servers outlook --tools
+npx -y @mcp-z/cli inspect --servers outlook --tools
 
 # Call a tool
-mcp-z call outlook message-search '{"query":"from:alice@example.com"}'
+npx -y @mcp-z/cli call-tool outlook message-search '{"query":"from:alice@example.com"}'
 ```
 
 ## Tools
@@ -189,7 +196,7 @@ mcp-z call outlook message-search '{"query":"from:alice@example.com"}'
 
 ## Configuration reference
 
-See `server.json` for all supported environment variables, CLI arguments, and defaults.
+See [`server.json`](https://github.com/mcp-z/mcp-outlook/blob/master/server.json) for all supported environment variables, CLI arguments, and defaults.
 
 ## Storage backends
 
@@ -207,6 +214,6 @@ TOKEN_STORE_URI=redis://localhost:6379 mcp-outlook
 
 A protocol whose adapter is missing fails at startup naming the package to install.
 
-### Documentation
+## Documentation
 
 [API Docs](https://mcp-z.github.io/mcp-outlook)
