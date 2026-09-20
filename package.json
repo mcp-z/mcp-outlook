@@ -63,6 +63,8 @@
     "prepublish:check": "ncp",
     "prepublishOnly": "node scripts/require-dist-tag.cjs && tsds validate",
     "test": "tsds test:node --no-timeouts",
+    "test:ci": "tsds test:node --no-timeouts --ignore \"test/integration/**\"",
+    "test:ci:engines": "nvu engines tsds test:node --no-timeouts --ignore \"test/integration/**\"",
     "test:engines": "nvu engines tsds test:node --no-timeouts",
     "test:setup": "node scripts/setup-test.ts",
     "version": "tsds version"
