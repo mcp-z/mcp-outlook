@@ -1,4 +1,5 @@
 import '../../lib/env-loader.ts';
+import { pathToFileURL } from 'node:url';
 import type { ServerConfig } from '@mcp-z/mcp-outlook';
 import { setup } from '@mcp-z/mcp-outlook';
 import assert from 'assert';
@@ -50,7 +51,7 @@ describe('setup.createHTTPServer - transport initialization', () => {
       headless: true,
       logLevel: 'error',
       auth: 'loopback-oauth',
-      resourceStoreUri: `file://${path.join(testContextPath, 'files')}`,
+      resourceStoreUri: pathToFileURL(path.join(testContextPath, 'files')).href,
       repositoryUrl: 'https://github.com/mcp-z/mcp-outlook',
     };
 
@@ -73,7 +74,7 @@ describe('setup.createHTTPServer - transport initialization', () => {
       headless: true,
       logLevel: 'error',
       auth: 'loopback-oauth',
-      resourceStoreUri: `file://${path.join(testContextPath, 'files')}`,
+      resourceStoreUri: pathToFileURL(path.join(testContextPath, 'files')).href,
       repositoryUrl: 'https://github.com/mcp-z/mcp-outlook',
     };
 
@@ -98,7 +99,7 @@ describe('setup.createHTTPServer - transport initialization', () => {
       headless: true,
       logLevel: 'error',
       auth: 'loopback-oauth',
-      resourceStoreUri: `file://${path.join(testContextPath, 'files')}`,
+      resourceStoreUri: pathToFileURL(path.join(testContextPath, 'files')).href,
       repositoryUrl: 'https://github.com/mcp-z/mcp-outlook',
     };
 

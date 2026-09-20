@@ -1,3 +1,4 @@
+import { pathToFileURL } from 'node:url';
 import { sanitizeForLoggingFormatter } from '@mcp-z/oauth';
 import type { Logger, MiddlewareLayer } from '@mcp-z/server';
 import { createLoggingMiddleware } from '@mcp-z/server';
@@ -17,13 +18,13 @@ export function createLogger(config: ServerConfig): Logger {
 }
 
 export async function createTokenStore(baseDir: string) {
-  const tokenStoreUri = process.env.TOKEN_STORE_URI || `file://${path.join(baseDir, 'tokens.json')}`;
+  const tokenStoreUri = process.env.TOKEN_STORE_URI || pathToFileURL(path.join(baseDir, 'tokens.json')).href;
   return createStore<unknown>(tokenStoreUri);
 }
 
 export async function createDcrStore(baseDir: string, required: boolean) {
   if (!required) return undefined;
-  const dcrStoreUri = process.env.DCR_STORE_URI || `file://${path.join(baseDir, 'dcr.json')}`;
+  const dcrStoreUri = process.env.DCR_STORE_URI || pathToFileURL(path.join(baseDir, 'dcr.json')).href;
   return createStore<unknown>(dcrStoreUri);
 }
 
