@@ -62,10 +62,10 @@
     "format": "tsds format",
     "prepublish:check": "ncp",
     "prepublishOnly": "node scripts/require-dist-tag.cjs && tsds validate",
-    "test": "tsds test:node --no-timeouts",
-    "test:ci": "tsds test:node --no-timeouts --ignore \"test/integration/**\"",
-    "test:ci:engines": "nvu engines tsds test:node --no-timeouts --ignore \"test/integration/**\"",
-    "test:engines": "nvu engines tsds test:node --no-timeouts",
+    "test": "tsds test:node --require test/lib/env-loader.ts --no-timeouts",
+    "test:ci": "tsds test:node --require test/lib/env-loader.ts --no-timeouts --ignore \"test/integration/**\"",
+    "test:ci:engines": "nvu engines tsds test:node --require test/lib/env-loader.ts --no-timeouts --ignore \"test/integration/**\"",
+    "test:engines": "nvu engines tsds test:node --require test/lib/env-loader.ts --no-timeouts",
     "test:setup": "node scripts/setup-test.ts",
     "version": "tsds version"
   },
@@ -97,7 +97,8 @@
     "keyv": "^5.0.0",
     "node-version-use": "^2.4.7",
     "ts-dev-stack": "^1.22.1",
-    "tsds-config": "^1.0.4"
+    "tsds-config": "^1.0.4",
+    "tsds-lib": "^1.22.6"
   },
   "engines": {
     "node": ">=20"
