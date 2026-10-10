@@ -6,6 +6,7 @@
 import '../lib/env-loader.ts';
 import { createServerRegistry, type ManagedClient, type ServerRegistry } from '@mcp-z/client';
 import assert from 'assert';
+import { requiredEnv } from 'portable-env';
 
 describe('Outlook Server Spawn Integration', () => {
   let client: ManagedClient;
@@ -19,7 +20,7 @@ describe('Outlook Server Spawn Integration', () => {
           args: ['bin/server.js', '--headless'],
           env: {
             NODE_ENV: 'test',
-            MS_CLIENT_ID: process.env.MS_CLIENT_ID || '',
+            MS_CLIENT_ID: requiredEnv('MS_CLIENT_ID'),
             MS_CLIENT_SECRET: process.env.MS_CLIENT_SECRET || '',
             MS_TENANT_ID: process.env.MS_TENANT_ID || 'common',
             HEADLESS: 'true',
