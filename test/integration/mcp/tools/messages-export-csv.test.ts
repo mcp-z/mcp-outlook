@@ -1,4 +1,5 @@
 import '../../../lib/env-loader.ts';
+import { fileURLToPath, pathToFileURL } from 'node:url';
 import type { StorageContext, StorageExtra } from '@mcp-z/mcp-outlook';
 import { mcp } from '@mcp-z/mcp-outlook';
 import type { EnrichedExtra, Logger } from '@mcp-z/oauth-microsoft';
@@ -53,12 +54,12 @@ describe('Outlook messages export CSV tool (directory creation)', () => {
   const tmpDir = path.join(process.cwd(), '.tmp');
   const testStorageDir = path.join(tmpDir, 'test-export-storage');
   const storageContext: StorageContext = {
-    resourceStoreUri: `file://${testStorageDir}`,
+    resourceStoreUri: pathToFileURL(testStorageDir).href,
     baseUrl: 'http://localhost:3000',
     transport: { type: 'http', port: 3000 },
   };
   const stdioStorageContext: StorageContext = {
-    resourceStoreUri: `file://${testStorageDir}`,
+    resourceStoreUri: pathToFileURL(testStorageDir).href,
     transport: { type: 'stdio' },
   };
 
@@ -162,7 +163,7 @@ describe('Outlook messages export CSV tool (directory creation)', () => {
     assert.strictEqual(existsSync(nestedStorageDir), false, 'Nested resource store directory should not exist initially');
 
     const nestedStorageContext: StorageContext = {
-      resourceStoreUri: `file://${nestedStorageDir}`,
+      resourceStoreUri: pathToFileURL(nestedStorageDir).href,
       baseUrl: 'http://localhost:3000',
       transport: { type: 'http', port: 3000 },
     };
@@ -308,12 +309,12 @@ describe('Outlook messages export CSV tool (directory creation)', () => {
       // Verify URI format
       const uri = structured.uri;
       assert.ok(uri.startsWith('file://'), 'URI should start with file://');
-      assert.ok(path.isAbsolute(uri.replace('file://', '')), 'URI should contain absolute path');
-      assert.ok(uri.includes(testStorageDir), 'URI should include resource store path');
-      assert.ok(uri.includes(structured.filename), 'URI should include filename');
+      const filePath = fileURLToPath(uri);
+      assert.ok(path.isAbsolute(filePath), 'URI should contain absolute path');
+      const expectedFilePath = path.join(testStorageDir, structured.filename);
+      assert.strictEqual(filePath, expectedFilePath, 'URI should point to the expected file path');
 
       // Verify file exists at the URI path
-      const filePath = uri.replace('file://', '');
       assert.strictEqual(existsSync(filePath), true, 'File should exist at URI path');
     }
   });
