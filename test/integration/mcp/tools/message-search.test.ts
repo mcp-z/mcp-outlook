@@ -139,7 +139,7 @@ describe('message_search', () => {
       subject = `Query Format ${runId}`;
       body = `queryformat${randomAlpha(8)}`;
       kqlQuery = `"${body}"`;
-      messageId = await createTestMessage(sharedGraph, {
+      messageId = await createTestDraftMessage(sharedGraph, {
         from: { address: testAccountEmail },
         to: testAccountEmail,
         subject,
