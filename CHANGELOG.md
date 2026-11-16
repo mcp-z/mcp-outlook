@@ -1,5 +1,11 @@
 # Changelog
 
+## [2.3.1] - 2026-11-16
+
+### Fixed
+
+- A corrupt `v2:` page token is rejected with `Invalid pageToken` (an invalid-parameters error) instead of being sent to Microsoft Graph. Unprefixed legacy tokens are unchanged.
+
 ## [2.3.0] - 2026-11-15
 
 ### Added

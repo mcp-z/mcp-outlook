@@ -260,6 +260,8 @@ async function handler({ query, maxItems, filename, contentType, excludeThreadHi
       logger.debug('Could not clean up CSV file (may not exist)', { path: fullPath });
     }
 
+    if (error instanceof ProtocolError) throw error;
+
     const message = error instanceof Error ? error.message : String(error);
     logger.error('outlook.messages.export-csv error', { error: message });
 

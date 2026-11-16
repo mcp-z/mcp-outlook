@@ -1,3 +1,5 @@
+import { ProtocolError, ProtocolErrorCode } from '@mcp-z/server';
+
 const PREFIX = 'v2:';
 export const FIRST_PAGE_SKIP_TOKEN = '__mcp_outlook_first_page__';
 
@@ -55,7 +57,7 @@ export function decodeNextPageToken(token: string | undefined): DecodeNextPageTo
       legacy: false,
     };
   } catch {
-    return { skipToken: token, offset: 0, legacy: true };
+    throw new ProtocolError(ProtocolErrorCode.InvalidParams, 'Invalid pageToken');
   }
 }
 
