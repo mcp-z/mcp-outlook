@@ -66,6 +66,18 @@ it sends no `initialize` handshake and carries no session id.
 
 Configure via environment variables or the `env` block in `.mcp.json`. See `server.json` for the full list of options.
 
+### Configuration file
+
+Keep the client secret out of your shell and out of `.mcp.json` by putting it in a private file the server reads at startup, `~/.config/mcp-z/mcp-outlook/.env`:
+
+```bash
+mkdir -p ~/.config/mcp-z/mcp-outlook && chmod 700 ~/.config/mcp-z/mcp-outlook
+printf 'MS_CLIENT_ID=your-client-id\nMS_TENANT_ID=common\nMS_CLIENT_SECRET=your-client-secret\n' > ~/.config/mcp-z/mcp-outlook/.env
+chmod 600 ~/.config/mcp-z/mcp-outlook/.env
+```
+
+The server uses the first of `.mcp-z/mcp-outlook/.env` beside the nearest `.mcp.json` (else `~/.mcp-z/mcp-outlook/.env`) and `~/.config/mcp-z/mcp-outlook/.env` that exists. Anything set in the environment or in the `.mcp.json` `env` block overrides the file. On macOS and Linux the server refuses a file that other users can read.
+
 ### Loopback OAuth (default)
 
 Environment variables:
