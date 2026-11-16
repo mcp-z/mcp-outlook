@@ -187,6 +187,8 @@ async function handler({ query, pageSize = 50, pageToken, fields, shape = 'array
       structuredContent: { result },
     };
   } catch (error) {
+    if (error instanceof ProtocolError) throw error;
+
     const message = error instanceof Error ? error.message : String(error);
     logger.error('outlook.message.search error', { error: message });
 

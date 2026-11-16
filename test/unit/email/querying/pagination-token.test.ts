@@ -33,4 +33,13 @@ describe('pagination-token', () => {
     const decoded = decodeNextPageToken(token);
     assert.strictEqual(decoded.mode, 'search');
   });
+
+  it('throws InvalidParams for a v2 token with bad encoding', () => {
+    assert.throws(() => decodeNextPageToken('v2:!!!'), /Invalid pageToken/);
+  });
+
+  it('throws InvalidParams for a v2 token with the wrong version', () => {
+    const payload = Buffer.from(JSON.stringify({ v: 1, skipToken: 'x', offset: 0 })).toString('base64url');
+    assert.throws(() => decodeNextPageToken(`v2:${payload}`), /Invalid pageToken/);
+  });
 });
