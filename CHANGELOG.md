@@ -1,5 +1,11 @@
 # Changelog
 
+## [2.3.0] - 2026-11-15
+
+### Added
+
+- Private settings such as the OAuth client ID and secret can live in a file instead of the shell: the first file found of `<baseDir>/mcp-outlook/.env` (the `.mcp-z` folder beside the nearest `.mcp.json`, else in the home folder) and `~/.config/mcp-z/mcp-outlook/.env`. Non-empty environment values win over the file. On macOS and Linux a file readable by other accounts is refused. Requires `@mcp-z/server` 2.3.0.
+
 ## [2.2.0] - 2026-09-07
 
 ### Changed

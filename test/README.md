@@ -8,5 +8,5 @@ npm test
 
 Notes:
 - Tests run in the package context so Node will resolve `package.json` and dependencies correctly.
-- `test/lib/env-loader.ts` optionally loads `.env.test` through `portable-env` and must be the first import in every test file. File values override matching inherited values. The shell or CI can provide credentials without a file.
+- `test/lib/env-loader.ts` optionally loads the package root's `.env.test`, else `~/.config/mcp-z/mcp-outlook/.env.test` (the first one found is used) through `portable-env` and must be the first import in every test file. File values override matching inherited values. The shell or CI can provide credentials without a file.
 - Helpers used only for tests should live under `test/lib/` so they are executed within the package context.
