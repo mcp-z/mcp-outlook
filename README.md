@@ -219,12 +219,14 @@ OAuth tokens (`TOKEN_STORE_URI`) and DCR registrations (`DCR_STORE_URI`) are sto
 Any other backend needs its adapter installed alongside this server. Adapters are resolved with `require()`, so a globally installed server finds a globally installed adapter:
 
 ```bash
-npm install -g @mcp-z/mcp-outlook @keyv/redis
+npm install -g @mcp-z/mcp-outlook @keyv/redis@6
 
 TOKEN_STORE_URI=redis://localhost:6379 mcp-outlook
 ```
 
-A protocol whose adapter is missing fails at startup naming the package to install.
+A protocol whose adapter is missing fails at startup naming the package to install. Adapters you install should be keyv 6 versions.
+
+Saved sign-ins from earlier versions are moved to the new storage format on first start.
 
 ## Documentation
 
