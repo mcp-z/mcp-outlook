@@ -1,7 +1,8 @@
 import '../../../lib/env-loader.ts';
 import type { OutlookSystemCategory } from '@mcp-z/mcp-outlook';
 import assert from 'assert';
-import { toGraphFilter, toOutlookFilter } from '../../../../src/email/querying/query-builder.ts';
+import { extractOutlookFilters, toGraphFilter, toOutlookFilter } from '../../../../src/email/querying/query-builder.ts';
+import { InvalidQueryError } from '../../../../src/schemas/outlook-query-schema.ts';
 
 describe('toGraphFilter - basic field queries', () => {
   it('handles from field with email address', () => {
@@ -650,5 +651,30 @@ describe('toOutlookFilter - integration', () => {
     assert.deepStrictEqual(result.filters.fromIncludes, ['alice@example.com']);
     assert.deepStrictEqual(result.filters.bodyIncludes, ['report']);
     assert.strictEqual(result.filters.hasAttachment, true);
+  });
+});
+
+describe('extractOutlookFilters - categories', () => {
+  it('collects valid categories from every operator', () => {
+    const filters = extractOutlookFilters({ categories: { $any: ['work'], $all: ['family'], $none: ['urgent'] } });
+    assert.deepStrictEqual(filters.categoriesIncludes, ['work', 'family', 'urgent']);
+  });
+
+  it('collects a single valid category', () => {
+    assert.deepStrictEqual(extractOutlookFilters({ categories: 'travel' }).categoriesIncludes, ['travel']);
+  });
+
+  it('throws InvalidQueryError for an invalid category, in a string or any operator', () => {
+    const bad = (categories: unknown) => ({ categories }) as unknown as Parameters<typeof extractOutlookFilters>[0];
+    for (const query of [bad('bogus'), bad({ $any: ['work', 'bogus'] }), bad({ $all: ['bogus'] }), bad({ $none: ['bogus'] })]) {
+      assert.throws(
+        () => extractOutlookFilters(query),
+        (error: unknown) => error instanceof InvalidQueryError && /Invalid Outlook category: "bogus"/.test(error.message)
+      );
+    }
+  });
+
+  it('toGraphFilter reports an invalid category as InvalidQueryError', () => {
+    assert.throws(() => toGraphFilter({ categories: 'bogus' } as unknown as Parameters<typeof toGraphFilter>[0]), InvalidQueryError);
   });
 });
