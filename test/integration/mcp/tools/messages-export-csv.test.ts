@@ -458,7 +458,7 @@ describe('Outlook messages export CSV tool (directory creation)', () => {
         assert.fail('Expected ProtocolError to be thrown for malformed date query');
       } catch (err) {
         assert.ok(err instanceof Error, 'Error should be an Error instance');
-        assert.ok(err.message.includes('Error exporting messages') || err.message.includes('Invalid filter'), 'Error should indicate invalid query');
+        assert.ok(err.message.includes('Invalid query JSON'), 'Malformed date must be rejected as invalid query (InvalidParams)');
       }
     });
   });
