@@ -2,6 +2,17 @@ import { type BaseEmailQueryFields, baseEmailQueryFields, type FieldOperator, Fi
 import { z } from 'zod';
 
 /**
+ * The caller's query is invalid (unparseable JSON, a shape the schema rejects, or an unknown category).
+ * Tools report it as an invalid-parameters error rather than an internal error.
+ */
+export class InvalidQueryError extends Error {
+  constructor(message: string) {
+    super(message);
+    this.name = 'InvalidQueryError';
+  }
+}
+
+/**
  * Outlook system category values.
  * These are the built-in category types that Outlook recognizes.
  * Note: This is distinct from OutlookCategory (user-created category objects with id/displayName/color).
@@ -104,7 +115,7 @@ export function parseOutlookQueryParameter(input: OutlookQuery | string | undefi
   }
   const validated = OutlookQuerySchema.safeParse(input);
   if (!validated.success) {
-    throw new Error(`Invalid query JSON: ${validated.error.message}. Use {"kqlQuery":"<query>"} for KQL syntax.`);
+    throw new InvalidQueryError(`Invalid query JSON: ${validated.error.message}. Use {"kqlQuery":"<query>"} for KQL syntax.`);
   }
   return validated.data;
 }
@@ -113,7 +124,7 @@ function parseOutlookQueryString(value: string): OutlookQuery {
   const raw = safeJsonParse(value, 'kqlQuery');
   const validated = OutlookQuerySchema.safeParse(raw);
   if (!validated.success) {
-    throw new Error(`Invalid query JSON: ${validated.error.message}. Use {"kqlQuery":"<query>"} for KQL syntax.`);
+    throw new InvalidQueryError(`Invalid query JSON: ${validated.error.message}. Use {"kqlQuery":"<query>"} for KQL syntax.`);
   }
   return validated.data;
 }
@@ -123,7 +134,7 @@ function safeJsonParse(value: string, rawField: 'kqlQuery'): unknown {
     return JSON.parse(value);
   } catch (error) {
     const message = error instanceof Error ? error.message : 'Invalid JSON';
-    throw new Error(`Query must be valid JSON. ${message}. Wrap KQL syntax in {"${rawField}":"<query>"} if needed.`);
+    throw new InvalidQueryError(`Query must be valid JSON. ${message}. Wrap KQL syntax in {"${rawField}":"<query>"} if needed.`);
   }
 }
 

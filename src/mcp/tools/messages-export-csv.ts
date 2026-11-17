@@ -14,7 +14,7 @@ import { createWriteStream } from 'fs';
 import { unlink } from 'fs/promises';
 import { z } from 'zod';
 import { executeQuery as executeOutlookQuery } from '../../email/querying/execute-query.ts';
-import { OutlookQueryParameterSchema, parseOutlookQueryParameter } from '../../schemas/outlook-query-schema.ts';
+import { InvalidQueryError, OutlookQueryParameterSchema, parseOutlookQueryParameter } from '../../schemas/outlook-query-schema.ts';
 import type { StorageExtra } from '../../types.ts';
 
 const DEFAULT_PAGE_SIZE = 50;
@@ -261,6 +261,7 @@ async function handler({ query, maxItems, filename, contentType, excludeThreadHi
     }
 
     if (error instanceof ProtocolError) throw error;
+    if (error instanceof InvalidQueryError) throw new ProtocolError(ProtocolErrorCode.InvalidParams, error.message);
 
     const message = error instanceof Error ? error.message : String(error);
     logger.error('outlook.messages.export-csv error', { error: message });
