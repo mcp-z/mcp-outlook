@@ -1,0 +1,9 @@
+{
+  "cache": [
+    ["keyv:user@example.com:outlook:token", { "value": "{\"value\":{\"accessToken\":\"dummy-access\",\"refreshToken\":\"dummy-refresh\",\"expiresAt\":1794869711656}}" }],
+    ["keyv:outlook:linked", { "value": "{\"value\":[\"user@example.com\"]}" }],
+    ["keyv:outlook:active", { "value": "{\"value\":\"user@example.com\"}" }],
+    ["keyv:user@example.com:outlook:metadata", { "value": "{\"value\":{\"email\":\"user@example.com\",\"addedAt\":\"2026-11-16T21:55:12.074Z\"}}" }]
+  ],
+  "lastExpire": 1794866111655
+}

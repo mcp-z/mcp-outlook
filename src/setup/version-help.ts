@@ -57,7 +57,7 @@ Storage Backends:
   TOKEN_STORE_URI and DCR_STORE_URI accept any keyv-registry protocol.
   file:// (the default) and memory:// work out of the box. Any other backend
   needs its adapter installed alongside this server:
-    npm install -g @keyv/redis
+    npm install -g @keyv/redis@6
     TOKEN_STORE_URI=redis://localhost:6379 mcp-outlook
 
 OAuth Scopes:

@@ -8,8 +8,8 @@
 import { listAccountIds } from '@mcp-z/oauth';
 import { LoopbackOAuthProvider } from '@mcp-z/oauth-microsoft';
 import type { Keyv } from 'keyv';
+import keyvRegistry from 'keyv-registry';
 import { MS_SCOPE } from '../../src/constants.ts';
-import createStore from '../../src/lib/create-store.ts';
 import type { Logger } from '../../src/types.ts';
 import { createConfig } from './config.ts';
 
@@ -57,8 +57,9 @@ export default async function createMiddlewareContext() {
     error: (msg: string, meta?: Record<string, unknown>) => console.error(msg, meta),
   };
 
-  // Local .tokens/ directory at package root
-  const tokenStore = await createStore<unknown>('file://.//.tokens/store.json');
+  // Local .tokens/ directory at package root. Opened with keyv-registry directly: the test helper does not migrate it.
+  const tokenStore = await keyvRegistry<unknown>('file://.//.tokens/store.json');
+  if (!tokenStore) throw new Error('Failed to open .tokens/store.json');
 
   // Validate exactly 1 account exists
   const accountId = await validateSingleAccount(tokenStore, config.name);
