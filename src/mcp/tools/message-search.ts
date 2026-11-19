@@ -10,7 +10,7 @@ import type * as MicrosoftGraph from '@microsoft/microsoft-graph-types';
 import { z } from 'zod';
 import { needsBody } from '../../email/querying/client-filter.ts';
 import { executeQuery as executeOutlookQuery } from '../../email/querying/execute-query.ts';
-import { OutlookQueryParameterSchema, parseOutlookQueryParameter } from '../../schemas/outlook-query-schema.ts';
+import { InvalidQueryError, OutlookQueryParameterSchema, parseOutlookQueryParameter } from '../../schemas/outlook-query-schema.ts';
 
 const inputSchema = z.object({
   query: OutlookQueryParameterSchema.optional().describe('Structured query object or JSON string for filtering messages. Use query-syntax prompt for reference and kqlQuery for KQL syntax.'),
@@ -188,6 +188,7 @@ async function handler({ query, pageSize = 50, pageToken, fields, shape = 'array
     };
   } catch (error) {
     if (error instanceof ProtocolError) throw error;
+    if (error instanceof InvalidQueryError) throw new ProtocolError(ProtocolErrorCode.InvalidParams, error.message);
 
     const message = error instanceof Error ? error.message : String(error);
     logger.error('outlook.message.search error', { error: message });

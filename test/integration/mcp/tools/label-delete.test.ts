@@ -1,6 +1,7 @@
 import '../../../lib/env-loader.ts';
 import { mcp } from '@mcp-z/mcp-outlook';
 import type { Logger, MicrosoftAuthProvider } from '@mcp-z/oauth-microsoft';
+import { ProtocolError, ProtocolErrorCode } from '@mcp-z/server';
 import { Client } from '@microsoft/microsoft-graph-client';
 import assert from 'assert';
 import type { Input, Output } from '../../../../src/mcp/tools/label-delete.ts';
@@ -156,30 +157,16 @@ describe('outlook-label-delete', () => {
     }
   });
 
-  it('handles non-existent category deletion gracefully', async () => {
+  it('reports non-existent category deletion as an error when every delete failed', async () => {
     const nonExistentId = `non-existent-category-${Date.now()}`;
 
-    // Try to delete a non-existent category
-    const response = await handler({ ids: [nonExistentId] }, createExtra());
-
-    // Check structured response
-    const structured = (response?.structuredContent as { result?: unknown } | undefined)?.result as Output | undefined;
-    assert.ok(structured, 'structuredContent missing');
-
-    if (structured?.type === 'success') {
-      assert.strictEqual(structured.totalRequested, 1, 'totalRequested should be 1');
-      assert.strictEqual(structured.successCount, 0, 'successCount should be 0');
-      assert.strictEqual(structured.failureCount, 1, 'failureCount should be 1');
-      assert.strictEqual(structured.results.length, 1, 'results length should be 1');
-      const firstResult = structured.results[0];
-      if (firstResult) {
-        assert.strictEqual(firstResult.id, nonExistentId, 'result id should match');
-        assert.strictEqual(firstResult.success, false, 'result success should be false');
-        assert.ok(firstResult.error, 'error should be present');
-      }
-    } else {
-      assert.fail(`expected success branch but received error: ${JSON.stringify(structured)}`);
-    }
+    // Deleting only a non-existent category fails every delete: a ProtocolError, not a success result
+    await assert.rejects(handler({ ids: [nonExistentId] }, createExtra()), (error: unknown) => {
+      assert.ok(error instanceof ProtocolError, 'should be a ProtocolError');
+      assert.strictEqual(error.code, ProtocolErrorCode.InternalError, 'code should be InternalError');
+      assert.ok(error.message.includes(nonExistentId), 'message should name the failed id');
+      return true;
+    });
   });
 
   it('handles mixed success/failure batch operation', async () => {

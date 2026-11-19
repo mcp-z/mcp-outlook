@@ -47,6 +47,18 @@ const config = {
 export type Input = z.infer<typeof inputSchema>;
 export type Output = z.infer<typeof outputSchema>;
 
+type DeleteResult = { id: string; success: boolean; error?: string };
+
+/**
+ * An all-failed batch is an error, not a result: returns the error to throw when every delete failed, otherwise null.
+ * A partly failed batch keeps the success shape with failureCount and per-id errors.
+ */
+export function allFailedError(results: DeleteResult[]): ProtocolError | null {
+  if (results.length === 0 || results.some((r) => r.success)) return null;
+  const failures = results.map((r) => `${r.id}: ${r.error ?? 'Unknown error'}`);
+  return new ProtocolError(ProtocolErrorCode.InternalError, `Failed to delete all ${results.length} categories. ${failures.join('; ')}`, { results });
+}
+
 async function handler({ ids }: Input, extra: EnrichedExtra): Promise<CallToolResult> {
   const logger = extra.logger;
   logger.info('outlook-label-delete called', { count: ids.length });
@@ -69,7 +81,7 @@ async function handler({ ids }: Input, extra: EnrichedExtra): Promise<CallToolRe
   try {
     const graph = Client.initWithMiddleware({ authProvider: extra.authContext.auth });
     // Process deletions in chunks to prevent memory exhaustion
-    const allResults: Array<{ id: string; success: boolean; error?: string }> = [];
+    const allResults: DeleteResult[] = [];
 
     for (let i = 0; i < ids.length; i += CHUNK_SIZE) {
       const chunk = ids.slice(i, i + CHUNK_SIZE);
@@ -121,6 +133,12 @@ async function handler({ ids }: Input, extra: EnrichedExtra): Promise<CallToolRe
     const successCount = allResults.filter((r) => r.success).length;
     const failureCount = allResults.filter((r) => !r.success).length;
 
+    const failed = allFailedError(allResults);
+    if (failed) {
+      logger.error('outlook-label-delete all deletes failed', { totalRequested: ids.length });
+      throw failed;
+    }
+
     const result: Output = {
       type: 'success' as const,
       totalRequested: ids.length,
@@ -146,6 +164,7 @@ async function handler({ ids }: Input, extra: EnrichedExtra): Promise<CallToolRe
       structuredContent: { result },
     };
   } catch (error) {
+    if (error instanceof ProtocolError) throw error;
     const message = error instanceof Error ? error.message : String(error);
     logger.error('outlook-label-delete error', { error: message });
 

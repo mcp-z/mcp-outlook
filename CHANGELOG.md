@@ -1,5 +1,12 @@
 # Changelog
 
+## [2.4.1]
+
+### Fixed
+
+- `label-delete` now returns an error naming each failed category when every delete failed, instead of `type: 'success'` with `failureCount` equal to the total. When only some deletes fail, the result is unchanged.
+- An invalid category (or an unparseable or invalid query) in `message-search` and `messages-export-csv` is now reported as an invalid-parameters error instead of an internal error. The message is unchanged apart from that.
+
 ## [2.4.0]
 
 ### Changed

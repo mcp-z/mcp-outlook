@@ -3,6 +3,7 @@ import { fileURLToPath, pathToFileURL } from 'node:url';
 import type { StorageContext, StorageExtra } from '@mcp-z/mcp-outlook';
 import { mcp } from '@mcp-z/mcp-outlook';
 import type { EnrichedExtra, Logger } from '@mcp-z/oauth-microsoft';
+import { ProtocolError, ProtocolErrorCode } from '@mcp-z/server';
 import assert from 'assert';
 import { existsSync } from 'fs';
 import { mkdir, readFile, rm } from 'fs/promises';
@@ -369,8 +370,10 @@ describe('Outlook messages export CSV tool (directory creation)', () => {
         );
         assert.fail('Expected invalid query to throw');
       } catch (err) {
-        const message = err instanceof Error ? err.message : String(err);
-        assert.ok(message.includes('Invalid query JSON') || message.includes('Error exporting messages'), 'error should indicate invalid query');
+        // Invalid user input is InvalidParams, not an internal error
+        assert.ok(err instanceof ProtocolError, 'should be a ProtocolError');
+        assert.strictEqual(err.code, ProtocolErrorCode.InvalidParams, 'code should be InvalidParams');
+        assert.ok(err.message.includes('Invalid query JSON'), 'error should indicate invalid query');
       }
     });
 
@@ -455,7 +458,7 @@ describe('Outlook messages export CSV tool (directory creation)', () => {
         assert.fail('Expected ProtocolError to be thrown for malformed date query');
       } catch (err) {
         assert.ok(err instanceof Error, 'Error should be an Error instance');
-        assert.ok(err.message.includes('Error exporting messages') || err.message.includes('Invalid filter'), 'Error should indicate invalid query');
+        assert.ok(err.message.includes('Invalid query JSON'), 'Malformed date must be rejected as invalid query (InvalidParams)');
       }
     });
   });
