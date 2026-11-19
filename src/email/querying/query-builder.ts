@@ -1,4 +1,4 @@
-import type { OutlookQuery as QueryNode } from '../../schemas/outlook-query-schema.ts';
+import { InvalidQueryError, type OutlookQuery as QueryNode } from '../../schemas/outlook-query-schema.ts';
 
 type FieldOperator = {
   $any?: string[];
@@ -38,17 +38,17 @@ export const OUTLOOK_CATEGORIES = {
 
 /**
  * Validate and map category name to Outlook system category
- * Throws error for invalid categories (fail fast principle)
+ * Throws InvalidQueryError for invalid categories (fail fast principle)
  */
 export function mapOutlookCategory(category: string): string {
   // Input validation - fail fast on invalid input
   if (!category || typeof category !== 'string') {
-    throw new Error(`Invalid category: expected non-empty string, got ${typeof category}`);
+    throw new InvalidQueryError(`Invalid category: expected non-empty string, got ${typeof category}`);
   }
 
   const trimmed = category.trim();
   if (trimmed === '') {
-    throw new Error('Invalid category: empty string after trimming');
+    throw new InvalidQueryError('Invalid category: empty string after trimming');
   }
 
   // Fail fast on unknown categories
@@ -56,7 +56,7 @@ export function mapOutlookCategory(category: string): string {
   const systemCategory = OUTLOOK_CATEGORIES[normalizedCategory as keyof typeof OUTLOOK_CATEGORIES];
 
   if (!systemCategory) {
-    throw new Error(`Invalid Outlook category: "${category}". Valid categories: ${Object.keys(OUTLOOK_CATEGORIES).join(', ')}`);
+    throw new InvalidQueryError(`Invalid Outlook category: "${category}". Valid categories: ${Object.keys(OUTLOOK_CATEGORIES).join(', ')}`);
   }
 
   return systemCategory;
@@ -514,24 +514,17 @@ export function extractOutlookFilters(parsed: QueryNode): ExtractedFilters {
       }
     }
     if ('categories' in node && node.categories) {
+      // mapOutlookCategory throws on an invalid category, so every category that reaches the push is valid.
+      const pushValid = (categories: string[]) => {
+        for (const category of categories) mapOutlookCategory(category);
+        filters.categoriesIncludes.push(...categories);
+      };
       if (typeof node.categories === 'string') {
-        if (mapOutlookCategory(node.categories) !== null) {
-          filters.categoriesIncludes.push(node.categories);
-        }
+        pushValid([node.categories]);
       } else {
-        // Filter out invalid categories to prevent memory leaks and maintain clean state
-        if (node.categories.$any) {
-          const validCategories = node.categories.$any.filter((cat: string) => mapOutlookCategory(cat) !== null);
-          if (validCategories.length > 0) filters.categoriesIncludes.push(...validCategories);
-        }
-        if (node.categories.$all) {
-          const validCategories = node.categories.$all.filter((cat: string) => mapOutlookCategory(cat) !== null);
-          if (validCategories.length > 0) filters.categoriesIncludes.push(...validCategories);
-        }
-        if (node.categories.$none) {
-          const validCategories = node.categories.$none.filter((cat: string) => mapOutlookCategory(cat) !== null);
-          if (validCategories.length > 0) filters.categoriesIncludes.push(...validCategories);
-        }
+        if (node.categories.$any) pushValid(node.categories.$any);
+        if (node.categories.$all) pushValid(node.categories.$all);
+        if (node.categories.$none) pushValid(node.categories.$none);
       }
     }
     if ('label' in node && node.label) {
