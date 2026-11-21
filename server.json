@@ -70,8 +70,7 @@
         },
         {
           "name": "RESOURCE_STORE_URI",
-          "value": "file://~/.mcp-z/mcp-outlook/files",
-          "description": "Resource store URI for CSV export files (file://)",
+          "description": "Resource store URI for CSV export files (file://). Default: .mcp-z/mcp-outlook/files beside the nearest .mcp.json, else ~/.mcp-z/mcp-outlook/files",
           "placeholder": "file://~/.mcp-z/mcp-outlook/files",
           "isRequired": false,
           "isSecret": false
@@ -205,36 +204,16 @@
           "dependsOn": { "AUTH_MODE": ["loopback-oauth"] }
         },
         {
-          "name": "DCR_MODE",
-          "description": "Dynamic Client Registration mode",
-          "placeholder": "self-hosted",
-          "choices": ["self-hosted", "external"],
-          "isRequired": false,
-          "isSecret": false,
-          "default": "self-hosted",
-          "dependsOn": { "AUTH_MODE": ["dcr"] }
-        },
-        {
-          "name": "DCR_VERIFY_URL",
-          "description": "External verification endpoint URL (required for external DCR mode)",
-          "placeholder": "https://example.com/verify",
-          "isRequired": false,
-          "isSecret": false,
-          "dependsOn": { "AUTH_MODE": ["dcr"], "DCR_MODE": ["external"] }
-        },
-        {
           "name": "DCR_STORE_URI",
-          "description": "DCR client storage URI (for self-hosted DCR mode)",
-          "placeholder": "file://~/.mcp-z/mcp-outlook/dcr.json",
+          "description": "DCR client storage URI (for self-hosted DCR mode). Default: .mcp-z/dcr.json beside the nearest .mcp.json, else ~/.mcp-z/dcr.json",
+          "placeholder": "file+shared://~/.mcp-z/dcr.json",
           "isRequired": false,
           "isSecret": false,
-          "default": "file://~/.mcp-z/mcp-outlook/dcr.json",
           "dependsOn": { "AUTH_MODE": ["dcr"] }
         },
         {
           "name": "RESOURCE_STORE_URI",
-          "value": "file://~/.mcp-z/mcp-outlook/files",
-          "description": "Resource store URI for CSV export files (file://)",
+          "description": "Resource store URI for CSV export files (file://). Default: .mcp-z/mcp-outlook/files beside the nearest .mcp.json, else ~/.mcp-z/mcp-outlook/files",
           "placeholder": "file://~/.mcp-z/mcp-outlook/files",
           "isRequired": false,
           "isSecret": false
@@ -291,17 +270,6 @@
           "type": "named",
           "name": "--redirect-uri",
           "description": "OAuth redirect URI (default: ephemeral loopback)"
-        },
-        {
-          "type": "named",
-          "name": "--dcr-mode",
-          "description": "DCR mode",
-          "choices": ["self-hosted", "external"]
-        },
-        {
-          "type": "named",
-          "name": "--dcr-verify-url",
-          "description": "External verification endpoint URL (required for external DCR mode)"
         },
         {
           "type": "named",

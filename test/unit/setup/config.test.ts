@@ -1,6 +1,11 @@
 import '../../lib/env-loader.ts';
 import { setup } from '@mcp-z/mcp-outlook';
 import assert from 'assert';
+import * as fs from 'fs';
+import { safeRmSync } from 'fs-remove-compat';
+import * as path from 'path';
+import { pathToFileURL } from 'url';
+import { createDcrStore } from '../../../src/setup/runtime.ts';
 
 describe('setup.parseConfig', () => {
   const baseEnv = {
@@ -82,113 +87,59 @@ describe('setup.parseConfig', () => {
       });
     });
 
-    describe('External DCR mode', () => {
-      it('parses DCR mode with external configuration', () => {
-        const env = {
-          ...baseEnv,
-          DCR_MODE: 'external',
-          DCR_VERIFY_URL: 'https://auth.example.com/oauth/verify',
-        };
+    describe('External DCR mode is refused with --auth=dcr', () => {
+      const notSupported = { name: 'Error', message: /^external DCR mode is not supported/ };
+      const verifyUrlNotSupported = { name: 'Error', message: /DCR_VERIFY_URL is not supported/ };
 
-        const config = setup.parseConfig(['--auth=dcr'], env);
-
-        assert.strictEqual(config.auth, 'dcr');
-        assert.ok(config.dcrConfig);
-        assert.strictEqual(config.dcrConfig.mode, 'external');
-        assert.strictEqual(config.dcrConfig.verifyUrl, 'https://auth.example.com/oauth/verify');
-        assert.strictEqual(config.dcrConfig.storeUri, undefined);
-        assert.strictEqual(config.dcrConfig.clientId, 'test-client-id');
-        assert.strictEqual(config.dcrConfig.tenantId, 'common');
+      it('refuses DCR_MODE=external', () => {
+        assert.throws(() => setup.parseConfig(['--auth=dcr'], { ...baseEnv, DCR_MODE: 'external', DCR_VERIFY_URL: 'https://auth.example.com/oauth/verify' }), notSupported);
       });
 
-      it('parses DCR mode with CLI --dcr-mode=external', () => {
-        const env = {
-          ...baseEnv,
-          DCR_VERIFY_URL: 'https://auth.example.com/oauth/verify',
-        };
-
-        const config = setup.parseConfig(['--auth=dcr', '--dcr-mode=external'], env);
-
-        assert.strictEqual(config.auth, 'dcr');
-        assert.ok(config.dcrConfig);
-        assert.strictEqual(config.dcrConfig.mode, 'external');
-        assert.strictEqual(config.dcrConfig.verifyUrl, 'https://auth.example.com/oauth/verify');
+      it('refuses --dcr-mode=external', () => {
+        assert.throws(() => setup.parseConfig(['--auth=dcr', '--dcr-mode=external'], { ...baseEnv, DCR_VERIFY_URL: 'https://auth.example.com/oauth/verify' }), notSupported);
       });
 
-      it('parses DCR mode with CLI --dcr-verify-url', () => {
-        const env = {
-          ...baseEnv,
-          DCR_MODE: 'external',
-        };
-
-        const config = setup.parseConfig(['--auth=dcr', '--dcr-verify-url=https://new.example.com/verify'], env);
-
-        assert.strictEqual(config.auth, 'dcr');
-        assert.ok(config.dcrConfig);
-        assert.strictEqual(config.dcrConfig.mode, 'external');
-        assert.strictEqual(config.dcrConfig.verifyUrl, 'https://new.example.com/verify');
+      it('refuses external mode without a verify URL with the same error', () => {
+        assert.throws(() => setup.parseConfig(['--auth=dcr'], { ...baseEnv, DCR_MODE: 'external' }), notSupported);
       });
 
-      it('throws error when DCR_VERIFY_URL missing in external mode', () => {
-        const env = {
-          ...baseEnv,
-          DCR_MODE: 'external',
-        };
+      it('refuses --dcr-mode=external over DCR_MODE=self-hosted', () => {
+        assert.throws(() => setup.parseConfig(['--auth=dcr', '--dcr-mode=external'], { ...baseEnv, DCR_MODE: 'self-hosted', DCR_STORE_URI: 'file://.dcr.json' }), notSupported);
+      });
 
-        assert.throws(() => setup.parseConfig(['--auth=dcr'], env), {
-          name: 'Error',
-          message: 'DCR external mode requires --dcr-verify-url or DCR_VERIFY_URL environment variable',
-        });
+      it('refuses --dcr-verify-url', () => {
+        assert.throws(() => setup.parseConfig(['--auth=dcr', '--dcr-verify-url=https://new.example.com/verify'], baseEnv), verifyUrlNotSupported);
+      });
+
+      it('refuses DCR_VERIFY_URL', () => {
+        assert.throws(() => setup.parseConfig(['--auth=dcr'], { ...baseEnv, DCR_VERIFY_URL: 'https://old.example.com/verify' }), verifyUrlNotSupported);
+      });
+
+      it('does not refuse stale external settings outside --auth=dcr', () => {
+        const config = setup.parseConfig(['--auth=loopback-oauth'], { ...baseEnv, DCR_MODE: 'external', DCR_VERIFY_URL: 'https://auth.example.com/oauth/verify' });
+        assert.strictEqual(config.auth, 'loopback-oauth');
+        assert.strictEqual(config.dcrConfig, undefined);
       });
     });
 
     describe('DCR mode defaults', () => {
       it('defaults to self-hosted mode when DCR_MODE not specified', () => {
-        const env = {
-          ...baseEnv,
-          DCR_STORE_URI: 'file://.dcr.json',
-        };
-
-        const config = setup.parseConfig(['--auth=dcr'], env);
+        const config = setup.parseConfig(['--auth=dcr'], { ...baseEnv, DCR_STORE_URI: 'file://.dcr.json' });
 
         assert.strictEqual(config.auth, 'dcr');
         assert.ok(config.dcrConfig);
         assert.strictEqual(config.dcrConfig.mode, 'self-hosted');
         assert.strictEqual(config.dcrConfig.storeUri, 'file://.dcr.json');
       });
+
+      it('accepts --dcr-mode=self-hosted given explicitly', () => {
+        const config = setup.parseConfig(['--auth=dcr', '--dcr-mode=self-hosted'], baseEnv);
+        assert.strictEqual(config.dcrConfig?.mode, 'self-hosted');
+        assert.strictEqual(config.dcrConfig?.storeUri, undefined);
+      });
     });
 
     describe('DCR CLI overrides', () => {
-      it('CLI --dcr-mode overrides DCR_MODE env var', () => {
-        const env = {
-          ...baseEnv,
-          DCR_MODE: 'self-hosted',
-          DCR_STORE_URI: 'file://.dcr.json',
-          DCR_VERIFY_URL: 'https://auth.example.com/oauth/verify',
-        };
-
-        const config = setup.parseConfig(['--auth=dcr', '--dcr-mode=external'], env);
-
-        assert.strictEqual(config.auth, 'dcr');
-        assert.ok(config.dcrConfig);
-        assert.strictEqual(config.dcrConfig.mode, 'external');
-        assert.strictEqual(config.dcrConfig.verifyUrl, 'https://auth.example.com/oauth/verify');
-      });
-
-      it('CLI --dcr-verify-url overrides DCR_VERIFY_URL env var', () => {
-        const env = {
-          ...baseEnv,
-          DCR_MODE: 'external',
-          DCR_VERIFY_URL: 'https://old.example.com/verify',
-        };
-
-        const config = setup.parseConfig(['--auth=dcr', '--dcr-verify-url=https://new.example.com/verify'], env);
-
-        assert.strictEqual(config.auth, 'dcr');
-        assert.ok(config.dcrConfig);
-        assert.strictEqual(config.dcrConfig.verifyUrl, 'https://new.example.com/verify');
-      });
-
       it('CLI --dcr-store-uri overrides DCR_STORE_URI env var', () => {
         const env = {
           ...baseEnv,
@@ -205,27 +156,14 @@ describe('setup.parseConfig', () => {
     });
 
     describe('Invalid DCR mode', () => {
-      it('throws error for invalid --dcr-mode value', () => {
-        const env = {
-          ...baseEnv,
-        };
+      const invalid = { name: 'Error', message: 'Invalid DCR mode "invalid": only self-hosted is supported' };
 
-        assert.throws(() => setup.parseConfig(['--auth=dcr', '--dcr-mode=invalid'], env), {
-          name: 'Error',
-          message: 'Invalid --dcr-mode value: "invalid". Valid values: self-hosted, external',
-        });
+      it('throws error for invalid --dcr-mode value', () => {
+        assert.throws(() => setup.parseConfig(['--auth=dcr', '--dcr-mode=invalid'], baseEnv), invalid);
       });
 
       it('throws error for invalid DCR_MODE env var', () => {
-        const env = {
-          ...baseEnv,
-          DCR_MODE: 'invalid',
-        };
-
-        assert.throws(() => setup.parseConfig(['--auth=dcr'], env), {
-          name: 'Error',
-          message: 'Invalid --dcr-mode value: "invalid". Valid values: self-hosted, external',
-        });
+        assert.throws(() => setup.parseConfig(['--auth=dcr'], { ...baseEnv, DCR_MODE: 'invalid' }), invalid);
       });
     });
   });
@@ -392,5 +330,88 @@ describe('setup.parseConfig', () => {
     const config = setup.parseConfig(['--log-level=warn'], env);
 
     assert.strictEqual(config.logLevel, 'warn');
+  });
+
+  describe('server.json DCR settings', () => {
+    type Entry = { name?: string };
+    const manifest = JSON.parse(fs.readFileSync(path.resolve('server.json'), 'utf8')) as { packages: { environmentVariables: Entry[]; packageArguments: Entry[] }[] };
+
+    it('lists no external DCR setting in either transport', () => {
+      const names = manifest.packages.flatMap((p) => [...p.environmentVariables, ...p.packageArguments].map((e) => e.name));
+      for (const setting of ['--dcr-mode', '--dcr-verify-url', 'DCR_MODE', 'DCR_VERIFY_URL']) assert.ok(!names.includes(setting), `server.json still lists ${setting}`);
+    });
+  });
+
+  describe('server.json store entries', () => {
+    type Entry = { name?: string; value?: string; default?: string; placeholder?: string; description?: string };
+    const manifest = JSON.parse(fs.readFileSync(path.resolve('server.json'), 'utf8')) as { packages: { transport: { type: string }; environmentVariables: Entry[]; packageArguments: Entry[] }[] };
+    const entries = (names: string[]) => manifest.packages.flatMap((p) => [...p.environmentVariables, ...p.packageArguments].filter((e) => names.includes(e.name ?? '')).map((e) => ({ transport: p.transport.type, ...e })));
+
+    describe('DCR store', () => {
+      const dcrEntries = entries(['DCR_STORE_URI', '--dcr-store-uri']);
+
+      it('lists the entries in the HTTP transport', () => {
+        assert.strictEqual(dcrEntries.filter((e) => e.name === 'DCR_STORE_URI').length, 1);
+        assert.strictEqual(dcrEntries.filter((e) => e.name === '--dcr-store-uri').length, 1);
+      });
+
+      it('carries no fixed value or default, so a generated configuration keeps the server default', () => {
+        for (const entry of dcrEntries) {
+          assert.strictEqual(entry.value, undefined, `${entry.transport} ${entry.name} has a value`);
+          assert.strictEqual(entry.default, undefined, `${entry.transport} ${entry.name} has a default`);
+        }
+      });
+
+      it('shows the shared default store as the placeholder, and the code builds its file at that name', async () => {
+        const placeholder = dcrEntries.find((e) => e.name === 'DCR_STORE_URI')?.placeholder;
+        assert.strictEqual(placeholder, 'file+shared://~/.mcp-z/dcr.json');
+        const saved = process.env.DCR_STORE_URI;
+        delete process.env.DCR_STORE_URI;
+        const baseDir = path.resolve('.tmp', `server-json-dcr-${process.pid}`);
+        fs.mkdirSync(baseDir, { recursive: true });
+        try {
+          const store = await createDcrStore(baseDir, true, { debug: () => {}, info: () => {}, warn: () => {}, error: () => {} });
+          await store?.set('dcr:client:x', { x: 1 });
+          await store?.disconnect();
+          assert.ok(fs.existsSync(path.join(baseDir, path.basename(String(placeholder)))), 'the default DCR store file is not named like the placeholder');
+        } finally {
+          if (saved !== undefined) process.env.DCR_STORE_URI = saved;
+          safeRmSync(baseDir, { recursive: true, force: true });
+        }
+      });
+    });
+
+    it('lists no token store entry whose value could pin a path', () => {
+      for (const entry of entries(['TOKEN_STORE_URI', '--token-store-uri'])) {
+        assert.strictEqual(entry.value, undefined);
+        assert.strictEqual(entry.default, undefined);
+      }
+    });
+
+    describe('resource store', () => {
+      const resourceEntries = entries(['RESOURCE_STORE_URI', '--resource-store-uri']);
+
+      it('lists the entries in both transports', () => {
+        assert.strictEqual(resourceEntries.filter((e) => e.name === 'RESOURCE_STORE_URI').length, 2);
+        assert.strictEqual(resourceEntries.filter((e) => e.name === '--resource-store-uri').length, 2);
+      });
+
+      it('carries no fixed value or default, so a generated configuration keeps the server default', () => {
+        for (const entry of resourceEntries) {
+          assert.strictEqual(entry.value, undefined, `${entry.transport} ${entry.name} has a value`);
+          assert.strictEqual(entry.default, undefined, `${entry.transport} ${entry.name} has a default`);
+        }
+      });
+
+      it('describes both cases of the default in the description', () => {
+        for (const entry of resourceEntries.filter((e) => e.name === 'RESOURCE_STORE_URI')) assert.ok(entry.description?.includes('.mcp-z/mcp-outlook/files beside the nearest .mcp.json, else ~/.mcp-z/mcp-outlook/files'), `${entry.transport}: ${entry.description}`);
+      });
+
+      it('shows the home form of the server default as the placeholder, and the code builds that default from the data directory', () => {
+        const config = setup.parseConfig([], baseEnv);
+        for (const entry of resourceEntries.filter((e) => e.name === 'RESOURCE_STORE_URI')) assert.strictEqual(entry.placeholder, `file://~/.mcp-z/${config.name}/files`);
+        assert.strictEqual(config.resourceStoreUri, pathToFileURL(path.join(config.baseDir, config.name, 'files')).href);
+      });
+    });
   });
 });
