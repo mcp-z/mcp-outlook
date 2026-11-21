@@ -70,8 +70,7 @@
         },
         {
           "name": "RESOURCE_STORE_URI",
-          "value": "file://~/.mcp-z/mcp-outlook/files",
-          "description": "Resource store URI for CSV export files (file://)",
+          "description": "Resource store URI for CSV export files (file://). Default: .mcp-z/mcp-outlook/files beside the nearest .mcp.json, else ~/.mcp-z/mcp-outlook/files",
           "placeholder": "file://~/.mcp-z/mcp-outlook/files",
           "isRequired": false,
           "isSecret": false
@@ -214,8 +213,7 @@
         },
         {
           "name": "RESOURCE_STORE_URI",
-          "value": "file://~/.mcp-z/mcp-outlook/files",
-          "description": "Resource store URI for CSV export files (file://)",
+          "description": "Resource store URI for CSV export files (file://). Default: .mcp-z/mcp-outlook/files beside the nearest .mcp.json, else ~/.mcp-z/mcp-outlook/files",
           "placeholder": "file://~/.mcp-z/mcp-outlook/files",
           "isRequired": false,
           "isSecret": false
