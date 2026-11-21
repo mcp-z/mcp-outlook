@@ -206,11 +206,10 @@
         },
         {
           "name": "DCR_STORE_URI",
-          "description": "DCR client storage URI (for self-hosted DCR mode)",
-          "placeholder": "file://~/.mcp-z/mcp-outlook/dcr.json",
+          "description": "DCR client storage URI (for self-hosted DCR mode). Default: .mcp-z/dcr.json beside the nearest .mcp.json, else ~/.mcp-z/dcr.json",
+          "placeholder": "file+shared://~/.mcp-z/dcr.json",
           "isRequired": false,
           "isSecret": false,
-          "default": "file://~/.mcp-z/mcp-outlook/dcr.json",
           "dependsOn": { "AUTH_MODE": ["dcr"] }
         },
         {
