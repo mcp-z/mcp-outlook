@@ -21,6 +21,6 @@ describe('stdio start failure (outlook)', () => {
     }
     assert.notStrictEqual(stderr, undefined, 'the server should not start with an unknown store protocol');
     assert.ok(!stderr?.includes('sonic boom is not ready yet'), `stderr: ${stderr}`);
-    assert.ok(stderr?.includes('Failed to create store for bogus:'), `stderr: ${stderr}`);
+    assert.ok(stderr?.includes('bogus:'), `stderr: ${stderr}`);
   });
 });

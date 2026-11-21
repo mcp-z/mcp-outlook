@@ -15,7 +15,7 @@ export function createLogger(config: ServerConfig): Logger {
   const hasStdio = config.transport.type === 'stdio';
   const logsPath = path.join(config.baseDir, 'logs', `${config.name}.log`);
   if (hasStdio) fs.mkdirSync(path.dirname(logsPath), { recursive: true });
-  return pino({ level: config.logLevel ?? 'info', formatters: sanitizeForLoggingFormatter() }, hasStdio ? pino.destination({ dest: logsPath, sync: false }) : pino.destination(1));
+  return pino({ level: config.logLevel ?? 'info', formatters: sanitizeForLoggingFormatter() }, hasStdio ? pino.destination({ dest: logsPath, sync: true }) : pino.destination(1));
 }
 
 // Several mcp-z processes share these files, so the default store merges each write under a lock.
