@@ -135,6 +135,7 @@ describe('setup.parseConfig', () => {
       it('accepts --dcr-mode=self-hosted given explicitly', () => {
         const config = setup.parseConfig(['--auth=dcr', '--dcr-mode=self-hosted'], baseEnv);
         assert.strictEqual(config.dcrConfig?.mode, 'self-hosted');
+        assert.strictEqual(config.dcrConfig?.storeUri, undefined);
       });
     });
 
