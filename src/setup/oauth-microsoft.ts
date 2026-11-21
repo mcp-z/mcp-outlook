@@ -1,5 +1,5 @@
 import { type AccountAuthProvider, AccountServer } from '@mcp-z/oauth';
-import { createDcrRouter, createLoopbackCallbackRouter, DcrOAuthProvider, DeviceCodeProvider, LoopbackOAuthProvider } from '@mcp-z/oauth-microsoft';
+import { createDcrRouter, createLoopbackCallbackRouter, DcrOAuthProvider, DcrTokenVerifier, DeviceCodeProvider, LoopbackOAuthProvider } from '@mcp-z/oauth-microsoft';
 import type { Logger, PromptModule, ToolModule } from '@mcp-z/server';
 import type { Router } from 'express';
 import type { Keyv } from 'keyv';
@@ -42,6 +42,8 @@ export interface OAuthAdapters {
   accountTools: ToolModule[];
   accountPrompts: PromptModule[];
   dcrRouter?: Router; // DCR OAuth endpoints (only for dcr mode)
+  /** Bearer gate for '/mcp' in DCR mode: every request is verified against this server's /oauth/verify. */
+  bearerAuth?: { verifier: DcrTokenVerifier; resourceMetadataUrl: string };
   loopbackRouter?: Router;
 }
 
@@ -127,7 +129,18 @@ export async function createOAuthAdapters(config: ServerConfig, deps: OAuthRunti
       baseUrl: oauthStaticConfig.baseUrl,
     });
 
-    return { primary, middleware: middleware as AuthMiddleware, authAdapter, accountTools, accountPrompts, dcrRouter };
+    return {
+      primary,
+      middleware: middleware as AuthMiddleware,
+      authAdapter,
+      accountTools,
+      accountPrompts,
+      dcrRouter,
+      bearerAuth: {
+        verifier: new DcrTokenVerifier(`${oauthStaticConfig.baseUrl}/oauth/verify`),
+        resourceMetadataUrl: `${oauthStaticConfig.baseUrl}/.well-known/oauth-protected-resource/mcp`,
+      },
+    };
   }
 
   // Device code mode - similar to service accounts (single static identity)

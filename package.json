@@ -73,8 +73,8 @@
   "dependencies": {
     "@mcp-z/email": "^1.0.0",
     "@mcp-z/oauth": "^2.2.0",
-    "@mcp-z/oauth-microsoft": "^2.4.0",
-    "@mcp-z/server": "^2.3.0",
+    "@mcp-z/oauth-microsoft": "^2.4.3",
+    "@mcp-z/server": "^2.4.0",
     "@microsoft/microsoft-graph-client": "^3.0.0",
     "@microsoft/microsoft-graph-types": "^2.0.0",
     "cors": "^2.0.0",
