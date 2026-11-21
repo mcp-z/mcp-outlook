@@ -71,6 +71,7 @@
     "version": "tsds version"
   },
   "dependencies": {
+    "@keyv/serialize": "^1.1.1",
     "@mcp-z/email": "^1.0.0",
     "@mcp-z/oauth": "^2.2.0",
     "@mcp-z/oauth-microsoft": "^2.4.3",
@@ -81,9 +82,11 @@
     "csv-stringify": "^6.0.0",
     "express": "^5.0.0",
     "keyv-file": "5.3.3",
-    "keyv-registry": "^3.0.0",
+    "keyv-registry": "^3.1.0",
     "module-root-sync": "^2.0.0",
     "pino": "^10.0.0",
+    "proper-lockfile": "^4.1.2",
+    "temp-suffix": "^1.0.12",
     "zod": "^4.2.0"
   },
   "devDependencies": {

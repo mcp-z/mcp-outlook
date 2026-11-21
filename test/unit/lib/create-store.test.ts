@@ -149,7 +149,7 @@ describe('create-store default stores (outlook)', () => {
     const file = path.join(folder, 'tokens.json');
     const damaged = '{"cache":[["a"';
     fs.writeFileSync(file, damaged);
-    await assert.rejects(createTokenStore(folder, logger), (err: Error & { cause?: Error }) => err.message.startsWith('Failed to create store for file') && String(err.cause?.message).includes(file));
+    await assert.rejects(createTokenStore(folder, logger), (err: Error) => err.message.includes(file));
     assert.strictEqual(fs.readFileSync(file, 'utf8'), damaged);
   });
 });

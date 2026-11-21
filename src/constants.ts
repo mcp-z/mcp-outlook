@@ -10,6 +10,9 @@ import { EMAIL_CHUNK_SIZE, EMAIL_MAX_BATCH_SIZE } from '@mcp-z/email';
 // Microsoft OAuth scopes required for Outlook operations
 export const MS_SCOPE = 'openid profile offline_access https://graph.microsoft.com/User.Read https://graph.microsoft.com/Mail.ReadWrite https://graph.microsoft.com/Mail.Send https://graph.microsoft.com/MailboxSettings.ReadWrite';
 
+// Default token and DCR stores: a JSON file several processes can share
+export const SHARED_FILE_PROTOCOL = 'file+shared:';
+
 // Batch processing configuration (from shared email constants)
 export const CHUNK_SIZE = EMAIL_CHUNK_SIZE;
 export const MAX_BATCH_SIZE = EMAIL_MAX_BATCH_SIZE;
