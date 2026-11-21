@@ -12,4 +12,10 @@ describe('setup/version-help', () => {
     const { output } = handleVersionHelp(['--help']);
     for (const setting of ['--dcr-mode', '--dcr-verify-url', 'DCR_MODE', 'DCR_VERIFY_URL']) assert.ok(!output?.includes(setting), `help still lists ${setting}`);
   });
+
+  it('help names both cases of the resource store default', () => {
+    const { output } = handleVersionHelp(['--help']);
+    assert.ok(output?.includes('.mcp-z/mcp-outlook/files beside the nearest .mcp.json, else ~/.mcp-z/mcp-outlook/files'));
+    assert.ok(!output?.includes('(default: file://~/.mcp-z/mcp-outlook/files)'));
+  });
 });

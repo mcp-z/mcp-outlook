@@ -2,7 +2,10 @@ import '../../lib/env-loader.ts';
 import { setup } from '@mcp-z/mcp-outlook';
 import assert from 'assert';
 import * as fs from 'fs';
+import { safeRmSync } from 'fs-remove-compat';
 import * as path from 'path';
+import { pathToFileURL } from 'url';
+import { createDcrStore } from '../../../src/setup/runtime.ts';
 
 describe('setup.parseConfig', () => {
   const baseEnv = {
@@ -335,6 +338,79 @@ describe('setup.parseConfig', () => {
     it('lists no external DCR setting in either transport', () => {
       const names = manifest.packages.flatMap((p) => [...p.environmentVariables, ...p.packageArguments].map((e) => e.name));
       for (const setting of ['--dcr-mode', '--dcr-verify-url', 'DCR_MODE', 'DCR_VERIFY_URL']) assert.ok(!names.includes(setting), `server.json still lists ${setting}`);
+    });
+  });
+
+  describe('server.json store entries', () => {
+    type Entry = { name?: string; value?: string; default?: string; placeholder?: string; description?: string };
+    const manifest = JSON.parse(fs.readFileSync(path.resolve('server.json'), 'utf8')) as { packages: { transport: { type: string }; environmentVariables: Entry[]; packageArguments: Entry[] }[] };
+    const entries = (names: string[]) => manifest.packages.flatMap((p) => [...p.environmentVariables, ...p.packageArguments].filter((e) => names.includes(e.name ?? '')).map((e) => ({ transport: p.transport.type, ...e })));
+
+    describe('DCR store', () => {
+      const dcrEntries = entries(['DCR_STORE_URI', '--dcr-store-uri']);
+
+      it('lists the entries in the HTTP transport', () => {
+        assert.strictEqual(dcrEntries.filter((e) => e.name === 'DCR_STORE_URI').length, 1);
+        assert.strictEqual(dcrEntries.filter((e) => e.name === '--dcr-store-uri').length, 1);
+      });
+
+      it('carries no fixed value or default, so a generated configuration keeps the server default', () => {
+        for (const entry of dcrEntries) {
+          assert.strictEqual(entry.value, undefined, `${entry.transport} ${entry.name} has a value`);
+          assert.strictEqual(entry.default, undefined, `${entry.transport} ${entry.name} has a default`);
+        }
+      });
+
+      it('shows the shared default store as the placeholder, and the code builds its file at that name', async () => {
+        const placeholder = dcrEntries.find((e) => e.name === 'DCR_STORE_URI')?.placeholder;
+        assert.strictEqual(placeholder, 'file+shared://~/.mcp-z/dcr.json');
+        const saved = process.env.DCR_STORE_URI;
+        delete process.env.DCR_STORE_URI;
+        const baseDir = path.resolve('.tmp', `server-json-dcr-${process.pid}`);
+        fs.mkdirSync(baseDir, { recursive: true });
+        try {
+          const store = await createDcrStore(baseDir, true, { debug: () => {}, info: () => {}, warn: () => {}, error: () => {} });
+          await store?.set('dcr:client:x', { x: 1 });
+          await store?.disconnect();
+          assert.ok(fs.existsSync(path.join(baseDir, path.basename(String(placeholder)))), 'the default DCR store file is not named like the placeholder');
+        } finally {
+          if (saved !== undefined) process.env.DCR_STORE_URI = saved;
+          safeRmSync(baseDir, { recursive: true, force: true });
+        }
+      });
+    });
+
+    it('lists no token store entry whose value could pin a path', () => {
+      for (const entry of entries(['TOKEN_STORE_URI', '--token-store-uri'])) {
+        assert.strictEqual(entry.value, undefined);
+        assert.strictEqual(entry.default, undefined);
+      }
+    });
+
+    describe('resource store', () => {
+      const resourceEntries = entries(['RESOURCE_STORE_URI', '--resource-store-uri']);
+
+      it('lists the entries in both transports', () => {
+        assert.strictEqual(resourceEntries.filter((e) => e.name === 'RESOURCE_STORE_URI').length, 2);
+        assert.strictEqual(resourceEntries.filter((e) => e.name === '--resource-store-uri').length, 2);
+      });
+
+      it('carries no fixed value or default, so a generated configuration keeps the server default', () => {
+        for (const entry of resourceEntries) {
+          assert.strictEqual(entry.value, undefined, `${entry.transport} ${entry.name} has a value`);
+          assert.strictEqual(entry.default, undefined, `${entry.transport} ${entry.name} has a default`);
+        }
+      });
+
+      it('describes both cases of the default in the description', () => {
+        for (const entry of resourceEntries.filter((e) => e.name === 'RESOURCE_STORE_URI')) assert.ok(entry.description?.includes('.mcp-z/mcp-outlook/files beside the nearest .mcp.json, else ~/.mcp-z/mcp-outlook/files'), `${entry.transport}: ${entry.description}`);
+      });
+
+      it('shows the home form of the server default as the placeholder, and the code builds that default from the data directory', () => {
+        const config = setup.parseConfig([], baseEnv);
+        for (const entry of resourceEntries.filter((e) => e.name === 'RESOURCE_STORE_URI')) assert.strictEqual(entry.placeholder, `file://~/.mcp-z/${config.name}/files`);
+        assert.strictEqual(config.resourceStoreUri, pathToFileURL(path.join(config.baseDir, config.name, 'files')).href);
+      });
     });
   });
 });
