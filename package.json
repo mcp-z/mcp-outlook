@@ -88,11 +88,13 @@
   },
   "devDependencies": {
     "@mcp-z/client": "^2.5.0",
+    "@modelcontextprotocol/client": "^2.4.0",
     "@modelcontextprotocol/sdk": "^1.10.0",
     "@types/cors": "^2.8.19",
     "@types/express": "^5.0.6",
     "@types/mocha": "^10.0.10",
     "@types/node": "^22",
+    "cross-spawn-cb": "^3.3.1",
     "fs-remove-compat": "^1.0.4",
     "get-port": "5.1.1",
     "keyv": "^6.1.0",
