@@ -458,6 +458,39 @@ describe('message_search', () => {
     });
   });
 
+  // Read-only: these page through the existing mailbox and send nothing.
+  describe('paging through a real mailbox', () => {
+    before(async () => {
+      const page = await sharedGraph.api('/me/messages').top(52).select('id').get();
+      assert.ok((page.value as unknown[]).length >= 52, 'needs at least 52 messages in the test mailbox; add mail by hand');
+    });
+
+    for (const [label, query] of [
+      ['a plain list ($skip links)', undefined],
+      ["a $search on subject 'test' ($skiptoken links)", { subject: 'test' }],
+    ] as const) {
+      it(`pages ${label} at page size 3 with no repeated ids`, async () => {
+        const input = { ...(query && { query }), pageSize: 3, fields: 'id', shape: 'objects', contentType: 'text', excludeThreadHistory: false } as Input;
+
+        const firstPage = await handler(input, createExtra());
+        const first = (firstPage.structuredContent as { result?: unknown } | undefined)?.result as Output | undefined;
+        assertObjectsShape(first, 'first page');
+        assert.strictEqual(first.items.length, 3);
+        assert.ok(first.nextPageToken, 'a next page token');
+
+        const secondPage = await handler({ ...input, pageToken: first.nextPageToken }, createExtra());
+        const second = (secondPage.structuredContent as { result?: unknown } | undefined)?.result as Output | undefined;
+        assertObjectsShape(second, 'second page');
+        assert.strictEqual(second.items.length, 3);
+
+        const firstIds = new Set((first.items as ItemWithId[]).map((item) => item.id));
+        for (const item of second.items as ItemWithId[]) {
+          assert.ok(!firstIds.has(item.id), 'second page should not repeat an id from the first page');
+        }
+      });
+    }
+  });
+
   describe('integration scenarios for structured search', () => {
     it('returns structured results for a scoped subject query', async () => {
       const testHandler = (opts: unknown = {}) => handler(opts as Input, createExtra());

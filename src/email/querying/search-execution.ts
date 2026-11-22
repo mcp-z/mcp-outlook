@@ -1,9 +1,11 @@
-import type { Client } from '@microsoft/microsoft-graph-client';
+import type { Client, GraphRequest } from '@microsoft/microsoft-graph-client';
 import type { Message } from '@microsoft/microsoft-graph-types';
 import type { OutlookQuery as QueryNode } from '../../schemas/outlook-query-schema.ts';
 import type { Logger } from '../../types.ts';
 import { buildClientPredicate } from './client-filter.ts';
-import { decodeNextPageToken, encodeNextPageToken, FIRST_PAGE_SKIP_TOKEN } from './pagination-token.ts';
+import { checkNextLink } from './next-link.ts';
+import { decodeNextPageToken, encodeNextPageToken } from './pagination-token.ts';
+import { midPageToken, resumeCollection } from './paging-decisions.ts';
 import { buildQueryFilter, toGraphFilter } from './query-builder.ts';
 
 export interface OutlookSearchOptions {
@@ -53,31 +55,36 @@ export async function searchMessages(graph: Client, opts: OutlookSearchOptions):
     const result = await fetchGraphPage(graph, {
       search: graphPlan.search ?? undefined,
       filter: graphPlan.filter ?? undefined,
-      skipToken: pageState.skipToken,
+      link: pageState.link,
       includeBody: effectiveIncludeBody,
       pageSize,
       logger,
     });
     return {
       messages: result.messages,
-      nextPageToken: result.nextSkipToken,
+      ...(result.nextLink && { nextPageToken: encodeNextPageToken({ link: result.nextLink, offset: 0 }) }),
     };
   }
 
-  const searchResult = await collectClientFilteredPages({
-    graph,
-    search: graphPlan.search ?? undefined,
-    filter: undefined,
-    startSkipToken: pageState.skipToken,
-    startOffset: pageState.offset,
-    predicate,
-    includeBody: effectiveIncludeBody,
-    pageSize,
-    logger,
-    maxPages: maxPages ?? null,
-    maxItemsScanned: maxItemsScanned ?? null,
-    mode: 'search',
-  });
+  const resumeFilter = pageToken !== undefined && resumeCollection(pageState.mode) === 'filter';
+  const fallbackFilter = query ? buildQueryFilter(query).trim() : '';
+
+  const searchResult = resumeFilter
+    ? EMPTY_COLLECT
+    : await collectClientFilteredPages({
+        graph,
+        search: graphPlan.search ?? undefined,
+        filter: undefined,
+        startLink: pageState.link,
+        startOffset: pageState.offset,
+        predicate,
+        includeBody: effectiveIncludeBody,
+        pageSize,
+        logger,
+        maxPages: maxPages ?? null,
+        maxItemsScanned: maxItemsScanned ?? null,
+        mode: 'search',
+      });
 
   if (searchResult.capHit) {
     return { messages: searchResult.collected };
@@ -85,10 +92,10 @@ export async function searchMessages(graph: Client, opts: OutlookSearchOptions):
   if (searchResult.midPageToken) {
     return { messages: searchResult.collected, nextPageToken: searchResult.midPageToken };
   }
-  if (searchResult.nextSkipToken) {
+  if (searchResult.nextLink) {
     return {
       messages: searchResult.collected,
-      nextPageToken: encodeNextPageToken({ skipToken: searchResult.nextSkipToken, offset: 0, mode: 'search' }),
+      nextPageToken: encodeNextPageToken({ link: searchResult.nextLink, offset: 0, mode: 'search' }),
     };
   }
   if (searchResult.collected.length > 0) {
@@ -96,7 +103,6 @@ export async function searchMessages(graph: Client, opts: OutlookSearchOptions):
   }
 
   if (predicate && query) {
-    const fallbackFilter = buildQueryFilter(query).trim();
     if (fallbackFilter) {
       const fallbackResult = await collectClientFilteredPages({
         graph,
@@ -107,8 +113,8 @@ export async function searchMessages(graph: Client, opts: OutlookSearchOptions):
         logger,
         maxPages: maxPages ?? null,
         maxItemsScanned: maxItemsScanned ?? null,
-        startSkipToken: undefined,
-        startOffset: 0,
+        startLink: resumeFilter ? pageState.link : undefined,
+        startOffset: resumeFilter ? pageState.offset : 0,
         mode: 'filter',
       });
 
@@ -118,10 +124,10 @@ export async function searchMessages(graph: Client, opts: OutlookSearchOptions):
       if (fallbackResult.midPageToken) {
         return { messages: fallbackResult.collected, nextPageToken: fallbackResult.midPageToken };
       }
-      if (fallbackResult.nextSkipToken) {
+      if (fallbackResult.nextLink) {
         return {
           messages: fallbackResult.collected,
-          nextPageToken: encodeNextPageToken({ skipToken: fallbackResult.nextSkipToken, offset: 0, mode: 'filter' }),
+          nextPageToken: encodeNextPageToken({ link: fallbackResult.nextLink, offset: 0, mode: 'filter' }),
         };
       }
       if (fallbackResult.collected.length > 0) {
@@ -136,64 +142,55 @@ export async function searchMessages(graph: Client, opts: OutlookSearchOptions):
 interface GraphPageParams {
   search?: string;
   filter?: string;
-  skipToken?: string;
+  /** Path and query of a next-page link; when set it is requested as given and the other parameters are not used. */
+  link?: string | undefined;
   includeBody: boolean;
   pageSize: number;
   logger: Logger;
 }
 
-async function fetchGraphPage(graph: Client, params: GraphPageParams): Promise<{ messages: Message[]; nextSkipToken?: string }> {
-  const { search, filter, skipToken, includeBody, pageSize, logger } = params;
-  let request = graph.api('/me/messages');
+async function fetchGraphPage(graph: Client, params: GraphPageParams): Promise<{ messages: Message[]; nextLink?: string }> {
+  const { search, filter, link, includeBody, pageSize, logger } = params;
+  let request: GraphRequest;
 
-  if (search) {
-    request = request.search(search);
-  }
-  if (filter) {
-    request = request.filter(filter);
-  }
-
-  const top = Math.min(pageSize, 1000);
-  request = request.top(top);
-
-  const selectFields = includeBody ? ['id', 'conversationId', 'receivedDateTime', 'subject', 'bodyPreview', 'body', 'from', 'toRecipients', 'ccRecipients', 'bccRecipients'] : ['id', 'conversationId', 'receivedDateTime', 'subject', 'bodyPreview', 'from', 'toRecipients', 'ccRecipients', 'bccRecipients'];
-  request = request.select(selectFields.join(','));
-
-  if (skipToken && skipToken !== FIRST_PAGE_SKIP_TOKEN) {
-    request = request.skipToken(skipToken);
+  if (link) {
+    request = graph.api(link);
+  } else {
+    request = graph.api('/me/messages');
+    if (search) {
+      request = request.search(search);
+    }
+    if (filter) {
+      request = request.filter(filter);
+    }
+    request = request.top(Math.min(pageSize, 1000));
+    const selectFields = includeBody ? ['id', 'conversationId', 'receivedDateTime', 'subject', 'bodyPreview', 'body', 'from', 'toRecipients', 'ccRecipients', 'bccRecipients'] : ['id', 'conversationId', 'receivedDateTime', 'subject', 'bodyPreview', 'from', 'toRecipients', 'ccRecipients', 'bccRecipients'];
+    request = request.select(selectFields.join(','));
   }
 
   logger.info('Fetching Outlook Graph page', {
     search: !!search,
     filter: !!filter,
-    skipToken: skipToken ? '[provided]' : undefined,
-    pageSize: top,
+    link: link ? '[provided]' : undefined,
+    pageSize: Math.min(pageSize, 1000),
   });
 
   const response = await request.get();
   const messages: Message[] = response.value || [];
-  let nextSkipToken: string | undefined;
-  if (response['@odata.nextLink']) {
-    try {
-      const nextLinkUrl = new URL(response['@odata.nextLink']);
-      nextSkipToken = nextLinkUrl.searchParams.get('$skiptoken') || undefined;
-    } catch {
-      logger.info('Failed to parse nextLink skipToken', { nextLink: response['@odata.nextLink'] });
-    }
-  }
+  const nextLink: string | undefined = response['@odata.nextLink'] ? checkNextLink(response['@odata.nextLink']) : undefined;
 
   logger.info(`Graph page returned ${messages.length} messages`, {
-    hasNextPage: !!nextSkipToken,
+    hasNextPage: !!nextLink,
   });
 
-  return { messages, nextSkipToken };
+  return { messages, ...(nextLink && { nextLink }) };
 }
 
 interface CollectParams {
   graph: Client;
   search?: string;
   filter?: string;
-  startSkipToken?: string;
+  startLink?: string | undefined;
   startOffset?: number;
   predicate: ((message: Message) => boolean) | null;
   includeBody: boolean;
@@ -207,17 +204,19 @@ interface CollectParams {
 interface CollectResult {
   collected: Message[];
   midPageToken?: string;
-  nextSkipToken?: string;
+  nextLink?: string;
   capHit: boolean;
 }
 
+const EMPTY_COLLECT: CollectResult = { collected: [], capHit: false };
+
 async function collectClientFilteredPages(params: CollectParams): Promise<CollectResult> {
-  const { graph, search, filter, startSkipToken, startOffset = 0, predicate, includeBody, pageSize, logger, maxPages, maxItemsScanned, mode } = params;
-  let currentSkipToken = startSkipToken;
+  const { graph, search, filter, startLink, startOffset = 0, predicate, includeBody, pageSize, logger, maxPages, maxItemsScanned, mode } = params;
+  let currentLink = startLink;
   let offset = startOffset;
   const collected: Message[] = [];
-  let midPageToken: string | undefined;
-  let lastNextSkipToken: string | undefined;
+  let midToken: string | undefined;
+  let lastNextLink: string | undefined;
   let capHit = false;
   let pagesFetched = 0;
   let scannedItems = 0;
@@ -228,18 +227,18 @@ async function collectClientFilteredPages(params: CollectParams): Promise<Collec
       break;
     }
 
-    const pageTokenUsed = currentSkipToken;
+    const pageLinkUsed = currentLink;
     const graphPage = await fetchGraphPage(graph, {
       search,
       filter,
-      skipToken: currentSkipToken,
+      link: currentLink,
       includeBody,
       pageSize,
       logger,
     });
 
     pagesFetched += 1;
-    lastNextSkipToken = graphPage.nextSkipToken;
+    lastNextLink = graphPage.nextLink;
     const pageItems = graphPage.messages;
     if (!pageItems.length) {
       break;
@@ -261,26 +260,21 @@ async function collectClientFilteredPages(params: CollectParams): Promise<Collec
       }
       collected.push(message);
       if (collected.length === pageSize) {
-        const nextOffset = startIndex + idx + 1;
-        midPageToken = encodeNextPageToken({
-          skipToken: pageTokenUsed,
-          offset: nextOffset,
-          mode,
-        });
+        midToken = midPageToken({ link: pageLinkUsed, pageStart: startIndex, index: idx, mode });
         break mainLoop;
       }
     }
 
-    currentSkipToken = graphPage.nextSkipToken;
-    if (!currentSkipToken) {
+    currentLink = graphPage.nextLink;
+    if (!currentLink) {
       break;
     }
   }
 
   return {
     collected,
-    midPageToken,
-    nextSkipToken: lastNextSkipToken,
+    midPageToken: midToken,
+    nextLink: lastNextLink,
     capHit,
   };
 }

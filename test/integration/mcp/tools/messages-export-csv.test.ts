@@ -4,6 +4,7 @@ import type { StorageContext, StorageExtra } from '@mcp-z/mcp-outlook';
 import { mcp } from '@mcp-z/mcp-outlook';
 import type { EnrichedExtra, Logger } from '@mcp-z/oauth-microsoft';
 import { ProtocolError, ProtocolErrorCode } from '@mcp-z/server';
+import { Client } from '@microsoft/microsoft-graph-client';
 import assert from 'assert';
 import { existsSync } from 'fs';
 import { mkdir, readFile, rm } from 'fs/promises';
@@ -461,5 +462,37 @@ describe('Outlook messages export CSV tool (directory creation)', () => {
         assert.ok(err.message.includes('Invalid query JSON'), 'Malformed date must be rejected as invalid query (InvalidParams)');
       }
     });
+  });
+});
+
+// Read-only: pages through the existing mailbox and sends nothing.
+describe('Outlook messages export CSV tool (paging)', () => {
+  const tmpDir = path.join(process.cwd(), '.tmp', 'test-export-paging');
+  const storageContext: StorageContext = {
+    resourceStoreUri: pathToFileURL(tmpDir).href,
+    transport: { type: 'stdio' },
+  };
+  let exportCsvHandler: TypedHandler<Input, EnrichedExtra & StorageExtra>;
+
+  before(async () => {
+    const middlewareContext = await createMiddlewareContext();
+    const graph = Client.initWithMiddleware({ authProvider: middlewareContext.auth });
+    const page = await graph.api('/me/messages').top(52).select('id').get();
+    assert.ok((page.value as unknown[]).length >= 52, 'needs at least 52 messages in the test mailbox; add mail by hand');
+
+    exportCsvHandler = middlewareContext.middleware.withToolAuth(mcp.toolFactories.messagesExportCsv()).handler as TypedHandler<Input>;
+    await mkdir(tmpDir, { recursive: true });
+  });
+
+  after(async () => {
+    await rm(tmpDir, { recursive: true, force: true });
+  });
+
+  it('exports maxItems 51 across two pages and reports truncated', async () => {
+    const result = await exportCsvHandler({ maxItems: 51, filename: 'test-paging.csv', contentType: 'text', excludeThreadHistory: false } as Input, createExtra(storageContext));
+    const structured = (result.structuredContent as { result?: unknown } | undefined)?.result as Output | undefined;
+    assert.strictEqual(structured?.type, 'success');
+    assert.strictEqual(structured.rowCount, 51);
+    assert.strictEqual(structured.truncated, true);
   });
 });

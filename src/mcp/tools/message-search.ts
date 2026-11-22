@@ -51,7 +51,7 @@ const successArraysBranchSchema = z.object({
 const outputSchema = z.union([successObjectsBranchSchema, successArraysBranchSchema, AuthRequiredBranchSchema]);
 
 const config = {
-  description: 'Search Outlook messages using structured query objects with flexible field selection.',
+  description: 'Search Outlook messages using structured query objects with flexible field selection. A pageSize or fields changed alongside a pageToken has no effect, because the token carries the next-page link that governs the page.',
   inputSchema: inputSchema,
   outputSchema: z.object({
     result: outputSchema,

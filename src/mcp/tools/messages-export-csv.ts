@@ -14,6 +14,7 @@ import { createWriteStream } from 'fs';
 import { unlink } from 'fs/promises';
 import { z } from 'zod';
 import { executeQuery as executeOutlookQuery } from '../../email/querying/execute-query.ts';
+import { cutToMaxItems } from '../../email/querying/paging-decisions.ts';
 import { InvalidQueryError, OutlookQueryParameterSchema, parseOutlookQueryParameter } from '../../schemas/outlook-query-schema.ts';
 import type { StorageExtra } from '../../types.ts';
 
@@ -102,6 +103,7 @@ async function handler({ query, maxItems, filename, contentType, excludeThreadHi
     // NO RETRIES: If any error occurs, fail the whole operation and clean up
     let totalRows = 0;
     let nextPageToken: string | undefined;
+    let truncated = false;
     const started = Date.now();
 
     while (totalRows < maxItems) {
@@ -186,7 +188,11 @@ async function handler({ query, maxItems, filename, contentType, excludeThreadHi
         }
       );
 
-      const csvRows = exec.items.map((item) => {
+      // The next-page link fixes $top at the first page's size, so a batch can hold more than is still wanted
+      const cut = cutToMaxItems(exec.items, totalRows, maxItems, Boolean(exec.metadata?.nextPageToken));
+      truncated = cut.truncated;
+
+      const csvRows = cut.rows.map((item) => {
         return [item.id, item.threadId, item.from, item.to, item.cc, item.bcc, item.subject, item.date, item.snippet, item.body, item.provider, item.labels];
       });
 
@@ -196,11 +202,11 @@ async function handler({ query, maxItems, filename, contentType, excludeThreadHi
         writeStream.write(rowsContent);
       }
 
-      totalRows += exec.items.length;
+      totalRows += cut.rows.length;
       nextPageToken = exec.metadata?.nextPageToken;
 
       logger.info('outlook.messages.export-csv batch written', {
-        batchSize: exec.items.length,
+        batchSize: cut.rows.length,
         totalRows,
         hasMore: Boolean(nextPageToken),
       });
@@ -218,7 +224,6 @@ async function handler({ query, maxItems, filename, contentType, excludeThreadHi
     });
 
     const durationMs = Date.now() - started;
-    const truncated = totalRows >= maxItems && Boolean(nextPageToken);
 
     logger.info('outlook.messages.export-csv completed', {
       rowCount: totalRows,

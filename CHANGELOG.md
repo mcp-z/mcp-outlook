@@ -1,5 +1,15 @@
 # Changelog
 
+## [2.4.3] - 2026-11-21
+
+### Fixed
+
+- `message-search` without a query now returns a `nextPageToken` and pages, and `messages-export-csv` continues past the first page. Both stopped after 50 messages (or after page 1 at a smaller page size) because Microsoft Graph pages these requests with a `$skip` link that was not followed. The export now stops at `maxItems` instead of overshooting it, and reports `truncated` when it cut rows or more remain. A search resumed from a fallback-filter page token now continues the filter instead of starting the search again. A next-page link that is not on `https://graph.microsoft.com/v1.0/me/messages` fails with an error instead of ending the results early.
+
+### Changed
+
+- A `pageToken` from an earlier version fails with an invalid-parameters error: drop it and repeat the search. A `pageSize` or `fields` changed alongside a `pageToken` has no effect, because the link in the token governs the page.
+
 ## [2.4.2] - 2026-11-20
 
 ### Security
