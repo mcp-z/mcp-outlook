@@ -905,7 +905,12 @@ describe('message_search', () => {
     let comprehensiveLogger: Logger;
     let comprehensiveMessageSearchHandler: TypedHandler<Input>;
 
-    before(async () => {
+    before(async function () {
+      // The before-hook sends 7 messages, which the test account cannot do; off unless TEST_INCLUDE_SEND=true
+      if (process.env.TEST_INCLUDE_SEND !== 'true') {
+        console.log('\n⚠️  Skipped: set TEST_INCLUDE_SEND=true to run; the test account cannot send mail\n');
+        this.skip();
+      }
       const middlewareContext = await createMiddlewareContext();
       const middleware = middlewareContext.middleware;
       const auth = middlewareContext.auth;

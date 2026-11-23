@@ -61,6 +61,8 @@ The selection includes all export and unit tests, local HTTP/file-serving checks
 
 The normal Outlook suite has no authored browser-consent skip cases. `npm run test:setup` is the existing interactive token-provisioning command and stays local. Trusted tests use the already-consented refresh token. `TEST_INCLUDE_MANUAL=false` and headless mode remain explicit in CI; neither setting turns missing or invalid credentials into success.
 
+The specs that send mail (`message-send.test.ts` and the message-search suite 'comprehensive query patterns') are off unless `TEST_INCLUDE_SEND=true`, because the test account cannot send mail; CI does not set it.
+
 ### Trusted tests
 
 Master CI calls the existing **Tests** workflow for serial Ubuntu and Windows jobs. The same workflow remains available for manual dispatch from master with a Linux or Windows runner choice. Both paths run the complete unattended suite and supported engines with `--bail`, using this repository's existing credential setup, persistence and cleanup.
